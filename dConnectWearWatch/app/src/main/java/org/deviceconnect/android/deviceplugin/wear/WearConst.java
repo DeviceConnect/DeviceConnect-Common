@@ -13,32 +13,76 @@ package org.deviceconnect.android.deviceplugin.wear;
  */
 public final class WearConst {
 
-    /** Vibrationを起動. */
+    /** Broadcast Intent Key. */
+    public static final String ACTION_WEAR_PING_SERVICE = "org.deviceconnect.wear.ping.service";
+
+    /** Vibration start. */
     public static final String DEVICE_TO_WEAR_VIBRATION_RUN = "org.deviceconnect.wear.vibration.run";
 
-    /** Vibrationを停止. */
+    /** Vibration stop. */
     public static final String DEVICE_TO_WEAR_VIBRATION_DEL = "org.deviceconnect.wear.vibration.del";
 
-    /** Actionが開かれたら. */
-    public static final String DEVICE_TO_WEAR_NOTIFICATION_OPEN = "org.deviceconnect.wear.notification.open";
+    /** when DeviceOrientation register is opened. */
+    public static final String DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER
+            = "org.deviceconnect.wear.deivceorienatation.regist";
 
-    /** DeviceOrientationが開かれたら. */
-    public static final String DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER = "org.deviceconnect.wear.deivceorienatation.regist";
+    /** when DeviceOrientation unregister is opened. */
+    public static final String DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER
+            = "org.deviceconnect.wear.deivceorienatation.unregist";
 
-    /** DeviceOrientationが開かれたら. */
-    public static final String DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER = "org.deviceconnect.wear.deivceorienatation.unregist";
+    /** Wear to Android. */
+    public static final String WEAR_TO_DEVICE_DEIVCEORIENTATION_DATA = "org.deviceconnect.wear.deivceorienatation.data";
 
-    /** WearからAndroid. */
-    public static final String WERA_TO_DEVICE_DEIVCEORIENTATION_DATA = "org.deviceconnect.wear.deivceorienatation.data";
+    /** Register Key Event (ondown). */
+    public static final String DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER
+            = "org.deviceconnect.wear.keyevent.ondown.regist";
 
-    /** DeviceId. */
-    public static final String PARAM_DEVICEID = "deviceId";
+    /** Register Key Event (onup). */
+    public static final String DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER = "org.deviceconnect.wear.keyevent.onup.regist";
 
-    /** NotificationId. */
-    public static final String PARAM_NOTIFICATIONID = "norificationId";
+    /** Remove Key Event (ondown). */
+    public static final String DEVICE_TO_WEAR_KEYEVENT_ONDOWN_UNREGISTER
+            = "org.deviceconnect.wear.keyevent.ondown.unregist";
+
+    /** Remove Key Event (onup). */
+    public static final String DEVICE_TO_WEAR_KEYEVENT_ONUP_UNREGISTER
+            = "org.deviceconnect.wear.keyevent.onup.unregist";
+
+    /** Wear to Android. */
+    public static final String WEAR_TO_DEVICE_KEYEVENT_DATA = "org.deviceconnect.wear.keyevent.data";
+
+    /** Broadcast Intent Key. */
+    public static final String PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT = "DC_WEAR_KEYEVENT_SVC_TO_ACT";
+
+    /** Broadcast Intent Key. */
+    public static final String PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC = "DC_WEAR_KEYEVENT_ACT_TO_SVC";
+
+    /** Key Event (down). */
+    public static final String PARAM_KEYEVENT_DOWN = "down";
+
+    /** Key Event (up). */
+    public static final String PARAM_KEYEVENT_UP = "up";
+
+    /** Broadcast Data Key (Regist). */
+    public static final String PARAM_KEYEVENT_REGIST = "keyeventRegist";
+
+    /** Broadcast Data Key (Data). */
+    public static final String PARAM_KEYEVENT_DATA = "data";
+
+    /** Key Type (Standard Keyboard). */
+    public static final int KEYTYPE_STD_KEY = 0x00000000;
+
+    /** Key Type (Media Control). */
+    public static final int KEYTYPE_MEDIA_CTRL = 0x00000200;
+
+    /** Key Type (Directional Pad / Button). */
+    public static final int KEYTYPE_DPAD_BUTTON = 0x00000400;
+
+    /** Key Type (User Define). */
+    public static final int KEYTYPE_USER = 0x00000800;
 
     /**
-     * コンストラクタ.
+     * Constructor.
      */
     private WearConst() {
     }

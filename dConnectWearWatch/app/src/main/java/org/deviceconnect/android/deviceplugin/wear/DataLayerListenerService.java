@@ -6,6 +6,10 @@ http://opensource.org/licenses/mit-license.php
  */
 package org.deviceconnect.android.deviceplugin.wear;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -37,15 +41,6 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** SensorManager. */
     private SensorManager mSensorManager;
 
-    /** 加速度 x. */
-    private float mAccellX;
-
-    /** 加速度 y. */
-    private float mAccellY;
-
-    /** 加速度 z. */
-    private float mAccellZ;
-
     /** Gyro x. */
     private float mGyroX;
 
@@ -55,11 +50,11 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** Gyro z. */
     private float mGyroZ;
 
-    /** DeviceのNodeID . */
+    /** Device NodeID . */
     private String mId;
 
     /** GyroSensor. */
-    private Sensor myGyroSensor;
+    private Sensor mGyroSensor;
 
     /** AcceleratorSensor. */
     private Sensor mAccelerometer;
@@ -75,6 +70,16 @@ public class DataLayerListenerService extends WearableListenerService implements
         mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
         // Connect google play service
         mGoogleApiClient.connect();
+
+        // set BroadcastReceiver
+        MyBroadcastReceiver mReceiver = new MyBroadcastReceiver();
+        IntentFilter intentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC);
+        registerReceiver(mReceiver, intentFilter);
+    }
+
+    @Override
+    public int onStartCommand(final Intent intent, final int flags, final int startId) {
+        return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
@@ -83,6 +88,13 @@ public class DataLayerListenerService extends WearableListenerService implements
         if (mGoogleApiClient != null) {
             // Disconnect google play service.
             mGoogleApiClient.disconnect();
+        }
+
+        if (mSensorManager != null) {
+            mSensorManager.unregisterListener(this, mAccelerometer);
+            mSensorManager.unregisterListener(this, mGyroSensor);
+            mSensorManager.unregisterListener(this);
+            mSensorManager = null;
         }
     }
 
@@ -134,18 +146,62 @@ public class DataLayerListenerService extends WearableListenerService implements
 
             List<Sensor> gyroSensors = mSensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
             if (gyroSensors.size() > 0) {
-                myGyroSensor = gyroSensors.get(0);
-                mSensorManager.registerListener(this, myGyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+                mGyroSensor = gyroSensors.get(0);
+                mSensorManager.registerListener(this, mGyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
             }
 
             mStartTime = System.currentTimeMillis();
+
+            // For service destruction suppression.
+            Intent i = new Intent(WearConst.ACTION_WEAR_PING_SERVICE);
+            startService(i);
+        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER)) {
+
+            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
+                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
+                mGoogleApiClient.connect();
+                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
+                if (!connectionResult.isSuccess()) {
+                    if (BuildConfig.DEBUG) {
+                        Log.e("WEAR", "Failed to connect google play service.");
+                    }
+                }
+            }
+
+            execKeyEventActivity(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER);
+        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER)) {
+
+            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
+                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
+                mGoogleApiClient.connect();
+                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
+                if (!connectionResult.isSuccess()) {
+                    if (BuildConfig.DEBUG) {
+                        Log.e("WEAR", "Failed to connect google play service.");
+                    }
+                }
+            }
+
+            execKeyEventActivity(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER);
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER)) {
             if (mSensorManager != null) {
                 mSensorManager.unregisterListener(this, mAccelerometer);
-                mSensorManager.unregisterListener(this, myGyroSensor);
+                mSensorManager.unregisterListener(this, mGyroSensor);
                 mSensorManager.unregisterListener(this);
                 mSensorManager = null;
             }
+        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_UNREGISTER)) {
+
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_UNREGISTER);
+            sendBroadcast(i);
+        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_UNREGISTER)) {
+
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_UNREGISTER);
+            sendBroadcast(i);
         }
     }
 
@@ -165,13 +221,16 @@ public class DataLayerListenerService extends WearableListenerService implements
             long time = System.currentTimeMillis();
             long interval = time - mStartTime;
             mStartTime = time;
-            mAccellX = sensorEvent.values[0];
-            mAccellY = sensorEvent.values[1];
-            mAccellZ = sensorEvent.values[2];
+            /* Acceleration x. */
+            float mAccellX = sensorEvent.values[0];
+            /** Acceleration y. */
+            float mAccellY = sensorEvent.values[1];
+            /** Acceleration z. */
+            float mAccellZ = sensorEvent.values[2];
             final String data = mAccellX + "," + mAccellY + "," + mAccellZ
                     + "," + mGyroX + "," + mGyroY + "," + mGyroZ + "," + interval;
 
-            // メッセージの送信
+            // Send message data.
             new AsyncTask<Void, Void, Void>() {
                 @Override
                 protected Void doInBackground(final Void... params) {
@@ -179,7 +238,7 @@ public class DataLayerListenerService extends WearableListenerService implements
                         mGoogleApiClient.connect();
                     } else {
                         MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(mGoogleApiClient, mId,
-                                WearConst.WERA_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
+                                WearConst.WEAR_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
                         if (!result.getStatus().isSuccess()) {
                             if (BuildConfig.DEBUG) {
                                 Log.e("WEAR", "Failed to send a sensor event.");
@@ -201,4 +260,59 @@ public class DataLayerListenerService extends WearableListenerService implements
     public void onAccuracyChanged(final Sensor sensor, final int accuracy) {
     }
 
+    /**
+     * Execute Key Event Activity.
+     *
+     * @param regist Register string.
+     */
+    private void execKeyEventActivity(final String regist) {
+
+        // Start Activity.
+        Intent i = new Intent(this, WearKeyEventProfileActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, regist);
+        this.startActivity(i);
+
+        // Send event regist to Activity.
+        i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
+        i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, regist);
+        sendBroadcast(i);
+    }
+
+    /**
+     * Broadcast Receiver.
+     */
+    public class MyBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(final Context context, final Intent i) {
+
+            final String data = i.getStringExtra(WearConst.PARAM_KEYEVENT_DATA);
+
+            // Send message data.
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(final Void... params) {
+                    if (!mGoogleApiClient.isConnected()) {
+                        mGoogleApiClient.connect();
+                    } else {
+                        ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
+                        if (!connectionResult.isSuccess()) {
+                            if (BuildConfig.DEBUG) {
+                                Log.e("WEAR", "Failed to connect google play service.");
+                            }
+                        }
+
+                        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(mGoogleApiClient, mId,
+                                WearConst.WEAR_TO_DEVICE_KEYEVENT_DATA, data.getBytes()).await();
+                        if (!result.getStatus().isSuccess()) {
+                            if (BuildConfig.DEBUG) {
+                                Log.e("WEAR", "Failed to send a key event.");
+                            }
+                        }
+                    }
+                    return null;
+                }
+            }.execute();
+        }
+    }
 }
