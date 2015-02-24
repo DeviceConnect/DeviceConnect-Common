@@ -178,7 +178,7 @@ MenuItem* get_menu_item( int index )
 static void zero_menu_item( void )
 {
     for( int i = how_many_item ; i < MENU_ITEM_MAX ; i ++ ) {
-        memset( &( menu[ i ] ), sizeof( menu[0] ), 0 ) ;
+        memset( &( menu[ i ] ), 0, sizeof( menu[0] ) ) ;
     }
 }
     
