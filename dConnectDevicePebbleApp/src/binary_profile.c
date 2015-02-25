@@ -1,3 +1,10 @@
+/*
+ binary_profile.c
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #include "pebble_device_plugin_defines.h"
 #include "pebble_device_plugin.h"
 #include "binary_profile.h"
@@ -11,7 +18,7 @@ static uint8_t *binary_data = NULL;
 /*!
  @brief データを一時的に保管するバッファ。
  */
-static bool under_receive = false ;
+static bool under_receive = false;
 
 /*!
  @brief データのインデックス。
@@ -32,19 +39,27 @@ static int binary_length = 0;
  @param[in] all_index index 総数
  @return 文字列
  */
-static char* make_log_explain( int index, int all_index )
+static char* make_log_explain(int index, int all_index)
 {
-    static char buf[ 20 ] ;
+    static char buf[20];
     
-    snprintf( buf, sizeof( buf), "%d(%d/%d)", index* BINARY_BUF_SIZE, index, all_index ) ;
-    return buf ;
+    snprintf(buf, sizeof(buf), "%d(%d/%d)", index* BINARY_BUF_SIZE, index, all_index);
+    return buf;
 }
 
-bool is_under_receive( void )
+/*!
+ @brief 受信中であるかどうかを判定する
+
+ @return under_receive
+ */
+bool is_under_receive(void)
 {
-    return under_receive ;
+    return under_receive;
 }
 
+/*!
+ @brief バイナリ送信で使用したバッファを初期化する.
+ */
 void binary_cleanup() {
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "binary_cleanup");
 
@@ -57,10 +72,19 @@ void binary_cleanup() {
     binary_length = 0;
 }
 
+/*!
+ @brief バイナリープロファイルの処理を行う.
+
+ @param received 受信したメッセージデータ
+ @param iter レスポンスを格納するイテレータ
+
+ @retval RETURN_SYNC 同期
+ @retval RETURN_ASYNC 非同期
+ */
 int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator *iter) {
     Tuple *lenTuple = dict_find(received, KEY_PARAM_BINARY_LENGTH);
     if (lenTuple != NULL) {
-        pebble_sniff_interval_normal() ;
+        pebble_sniff_interval_normal();
         int len = (int) lenTuple->value->uint32;
         if (binary_data != NULL) {
             free(binary_data);
@@ -69,10 +93,10 @@ int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator 
         binary_index = len / BINARY_BUF_SIZE;
         binary_length = len;
         DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_binary_handler start: %d %d", binary_index, binary_length);
-        under_receive = true ;
-        entry_log( "file send", "start" ) ;
+        under_receive = true;
+        entry_log("file send", "start");
     } else if (binary_data != NULL) {
-        pebble_sniff_interval_normal() ;
+        pebble_sniff_interval_normal();
         Tuple *indexTuple = dict_find(received, KEY_PARAM_BINARY_INDEX);
         Tuple *bodyTuple = dict_find(received, KEY_PARAM_BINARY_BODY);
         if (indexTuple != NULL && bodyTuple != NULL) {
@@ -86,15 +110,15 @@ int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator 
 
                 // データを受け取った後の処理を行う。
                 pebble_set_bitmap(binary_data, binary_length);
-                under_receive = false ;
+                under_receive = false;
 
                 // 使い終わった添付データは削除
                 binary_cleanup();
                 pebble_sniff_interval_reduced();
-                entry_log( "file send", "end" ) ;
+                entry_log("file send", "end");
             } else {
                 pebble_sniff_interval_normal() ;
-                replace_last_log( "file send", make_log_explain(index, binary_index) ) ;
+                replace_last_log("file send", make_log_explain(index, binary_index));
                 //DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_binary_handler: %d", index);
                 memcpy(&binary_data[index * BINARY_BUF_SIZE], body, BINARY_BUF_SIZE);
             }
@@ -103,13 +127,20 @@ int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator 
     return RETURN_ASYNC;
 }
 
-int get_pbi_image_width( uint8_t* data )
+/*!
+ @brief pbi image の横幅を求める
+
+ @param data pbi image へのポインタ.
+
+ @retval image の横幅
+ */
+int get_pbi_image_width(uint8_t* data)
 {
-    unsigned int hi = data[ 9 ];
-    unsigned int low = data[ 8 ] ;
-    unsigned int ans ;
-    hi &= 0xff ;
-    low &= 0xff ;
-    ans = ( hi << 8 ) | low ;
-    return (int)ans ;
+    unsigned int hi = data[9];
+    unsigned int low = data[8];
+    unsigned int ans;
+    hi &= 0xff;
+    low &= 0xff;
+    ans = (hi << 8) | low;
+    return (int)ans;
 }
