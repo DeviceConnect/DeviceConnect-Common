@@ -31,6 +31,11 @@
             android:name=".WearKeyEventProfileActivity"
             android:label="@string/title_activity_wear_keyevent_profile" >
         </activity>
+
+        <activity
+            android:name=".WearTouchProfileActivity"
+            android:label="@string/title_activity_wear_touch_profile" >
+        </activity>
     </application>
 
 </manifest>

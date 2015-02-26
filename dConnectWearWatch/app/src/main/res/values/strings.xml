@@ -11,5 +11,6 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="key_mode"> </string>
+    <string name="title_activity_wear_touch_profile">Touch Profile</string>
 
 </resources>

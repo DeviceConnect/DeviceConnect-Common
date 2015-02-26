@@ -74,6 +74,7 @@ public class DataLayerListenerService extends WearableListenerService implements
         // set BroadcastReceiver
         MyBroadcastReceiver mReceiver = new MyBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC);
+        intentFilter.addAction(WearConst.PARAM_DC_WEAR_TOUCH_ACT_TO_SVC);
         registerReceiver(mReceiver, intentFilter);
     }
 
@@ -101,10 +102,32 @@ public class DataLayerListenerService extends WearableListenerService implements
     @Override
     public void onMessageReceived(final MessageEvent messageEvent) {
 
+        String action = messageEvent.getPath();
+
+        if   ((action.equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_REGISTER))
+          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_REGISTER))) {
+            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
+                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
+                mGoogleApiClient.connect();
+                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
+                if (!connectionResult.isSuccess()) {
+                    if (BuildConfig.DEBUG) {
+                        Log.e("WEAR", "Failed to connect google play service.");
+                    }
+                }
+            }
+        }
+
         // get id of wear device
         mId = messageEvent.getSourceNodeId();
-        if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_VIBRATION_RUN)) {
-
+        if (action.equals(WearConst.DEVICE_TO_WEAR_VIBRATION_RUN)) {
             // get vibration pattern
             String mPattern = new String(messageEvent.getData());
 
@@ -119,24 +142,11 @@ public class DataLayerListenerService extends WearableListenerService implements
             // vibrate
             Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
             vibrator.vibrate(mPatternLong, -1);
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_VIBRATION_DEL)) {
-
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_VIBRATION_DEL)) {
             // stop vibrate
             Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
             vibrator.cancel();
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER)) {
-
-            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
-                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
-                mGoogleApiClient.connect();
-                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
-                if (!connectionResult.isSuccess()) {
-                    if (BuildConfig.DEBUG) {
-                        Log.e("WEAR", "Failed to connect google play service.");
-                    }
-                }
-            }
-
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER)) {
             mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
             List<Sensor> accelSensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
             if (accelSensors.size() > 0) {
@@ -155,52 +165,68 @@ public class DataLayerListenerService extends WearableListenerService implements
             // For service destruction suppression.
             Intent i = new Intent(WearConst.ACTION_WEAR_PING_SERVICE);
             startService(i);
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER)) {
-
-            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
-                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
-                mGoogleApiClient.connect();
-                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
-                if (!connectionResult.isSuccess()) {
-                    if (BuildConfig.DEBUG) {
-                        Log.e("WEAR", "Failed to connect google play service.");
-                    }
-                }
-            }
-
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER)) {
             execKeyEventActivity(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER);
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER)) {
-
-            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
-                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
-                mGoogleApiClient.connect();
-                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
-                if (!connectionResult.isSuccess()) {
-                    if (BuildConfig.DEBUG) {
-                        Log.e("WEAR", "Failed to connect google play service.");
-                    }
-                }
-            }
-
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER)) {
             execKeyEventActivity(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER);
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER)) {
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER)) {
             if (mSensorManager != null) {
                 mSensorManager.unregisterListener(this, mAccelerometer);
                 mSensorManager.unregisterListener(this, mGyroSensor);
                 mSensorManager.unregisterListener(this);
                 mSensorManager = null;
             }
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_UNREGISTER)) {
-
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_UNREGISTER)) {
             // Broadcast to Activity.
             Intent i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
             i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_UNREGISTER);
             sendBroadcast(i);
-        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_UNREGISTER)) {
-
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_UNREGISTER)) {
             // Broadcast to Activity.
             Intent i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
             i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_UNREGISTER);
+            sendBroadcast(i);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_REGISTER)) {
+            execTouchActivity(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_REGISTER);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_REGISTER)) {
+            execTouchActivity(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_REGISTER);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_REGISTER)) {
+            execTouchActivity(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_REGISTER);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_REGISTER)) {
+            execTouchActivity(WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_REGISTER);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_REGISTER)) {
+            execTouchActivity(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_REGISTER);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_REGISTER)) {
+            execTouchActivity(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_REGISTER);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_UNREGISTER)) {
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_TOUCH_REGIST, WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_UNREGISTER);
+            sendBroadcast(i);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_UNREGISTER)) {
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_TOUCH_REGIST, WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_UNREGISTER);
+            sendBroadcast(i);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_UNREGISTER)) {
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_TOUCH_REGIST, WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_UNREGISTER);
+            sendBroadcast(i);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_UNREGISTER)) {
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_TOUCH_REGIST, WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_UNREGISTER);
+            sendBroadcast(i);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_UNREGISTER)) {
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_TOUCH_REGIST, WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_UNREGISTER);
+            sendBroadcast(i);
+        } else if (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_UNREGISTER)) {
+            // Broadcast to Activity.
+            Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+            i.putExtra(WearConst.PARAM_TOUCH_REGIST, WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_UNREGISTER);
             sendBroadcast(i);
         }
     }
@@ -276,6 +302,25 @@ public class DataLayerListenerService extends WearableListenerService implements
         // Send event regist to Activity.
         i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
         i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, regist);
+        sendBroadcast(i);
+    }
+
+    /**
+     * Execute Touch Activity.
+     *
+     * @param regist Register string.
+     */
+    private void execTouchActivity(final String regist) {
+
+        // Start Activity.
+        Intent i = new Intent(this, WearTouchProfileActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        i.putExtra(WearConst.PARAM_TOUCH_REGIST, regist);
+        this.startActivity(i);
+
+        // Send event regist to Activity.
+        i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
+        i.putExtra(WearConst.PARAM_TOUCH_REGIST, regist);
         sendBroadcast(i);
     }
 
