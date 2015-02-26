@@ -1,3 +1,10 @@
+/*
+ pebble_device_plugin.h
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #ifndef pebble_device_plugin_h
 #define pebble_device_plugin_h
 
@@ -19,10 +26,8 @@
 /*!
  @brief エラーコードを設定する。
 
- @param[in] iter エラーコードを設定するイテレータ
  @param[in] error_code エラーコード
  */
-//void pebble_set_error_code(DictionaryIterator *iter, int error_code);
 void pebble_set_error_code(int error_code);
 
 /*!
@@ -60,10 +65,10 @@ void entry_log( char* titleStr, char* contents ) ;
 void entry_log2( char* title, char* contents ) ;
 
 /*!
- @brief 画面上にログを追加する
-
- @param[in] title 文字列
- @param[in] gbitmap
+ @brief 画像ログの表示。
+ 
+ @param[in] title タイトル。
+ @param[in] contents コンテンツ。
  */
 void entry_gbitmap_log( char* titleStr, void* contents ) ;
 
