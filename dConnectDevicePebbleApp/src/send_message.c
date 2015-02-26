@@ -1,10 +1,20 @@
+/*
+ send_message.c
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #include "send_message.h"
 #include "pebble_device_plugin.h"
 
 static int retry_count = 0;
 
-void send_message() {
-	
+/*!
+ @brief メッセージ送信処理。
+ */
+void send_message()
+{
 	DBG_LOG(APP_LOG_LEVEL_DEBUG, "send_message");
 	
 	DictionaryIterator *iter = NULL;
@@ -35,7 +45,7 @@ void send_message() {
 			int sec = local->tm_sec;
 			// RFC 3339に合わせて変換を行う
 			snprintf(str, sizeof(str), "%4d-%02d-%02dT%02d:%02d:%02d", year, month, day, hour, min, sec);
-			entry_log( "get setting/date", str ) ;
+			entry_log("get setting/date", str);
 			Tuplet dateTuple = TupletCString(KEY_PARAM_SETTING_DATE, p);
 			dict_write_tuplet(iter, &dateTuple);
 		} else {
@@ -53,7 +63,11 @@ void send_message() {
 	DBG_LOG(APP_LOG_LEVEL_DEBUG, "res:%d", res);
 }
 
-void success_message() {
+/*!
+ @brief メッセージ送信成功後の処理。
+ */
+void success_message()
+{
 	retry_count = 0;
 	if (mq_pop()) {
 		DBG_LOG(APP_LOG_LEVEL_DEBUG, "pop!!!");
@@ -61,9 +75,13 @@ void success_message() {
 	}
 }
 
-void retry_message() {
+/*!
+ @brief メッセージ送信リトライ処理。
+ */
+void retry_message()
+{
 	retry_count++;
-	if (retry_count<3) {
+	if (retry_count < 3) {
 		send_message();
 	}
 }
