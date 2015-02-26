@@ -1,3 +1,10 @@
+/*
+ vibration_profile.c
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #include "pebble_device_plugin_defines.h"
 #include "pebble_device_plugin.h"
 #include "vibration_profile.h"
@@ -15,18 +22,14 @@
  */
 static uint32_t vib_data[VIBRATION_PATTERN_SIZE];
 
-///*!
-// @brief Vibrationのパターン数。
-// */
-//static int vib_len = 0;
-
 /*!
  @brief 指定されたデータのオフセットから4byteをintとして読み込む。
  @param[in] data データ
  @param[in] offset オフセット
  @retval int
  */
-static int parse_int(char *data, int offset) {
+static int parse_int(char *data, int offset)
+{
     uint32_t res = 0;
     res |= (data[offset + 0] << 8);
     res |=  data[offset + 1];
@@ -38,7 +41,8 @@ static int parse_int(char *data, int offset) {
  @param[in] data データ
  @param[in] len パターンの個数
  */
-static int vibration_parse_pattern(char *data, int len) {
+static int vibration_parse_pattern(char *data, int len)
+{
     // 最大の配列のサイズはVIBRATION_PATTERN_SIZEで指定されている
     // これ以上のサイズの配列が送られてきた場合にはエラー
     if (len >= VIBRATION_PATTERN_SIZE) {
@@ -56,7 +60,14 @@ static int vibration_parse_pattern(char *data, int len) {
     return VIB_PATTERN_OK;
 }
 
-static void in_received_put_vibration_handler(DictionaryIterator *received) {
+/*!
+ @brief putメソッド,Vibrationプロファイルのメッセージを処理する.
+
+ @param[in] received 受信したメッセージ
+ @param[in] iter レスポンスを格納するイテレータ
+ */
+static void in_received_put_vibration_handler(DictionaryIterator *received)
+{
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_put_vibration_handler");
 
     Tuple *attributeTuple = dict_find(received, KEY_ATTRIBUTE);
@@ -67,12 +78,12 @@ static void in_received_put_vibration_handler(DictionaryIterator *received) {
         if (lenTuple == NULL && patternTuple == NULL) {
             vibes_short_pulse();
         } else {
-            int length = (int) lenTuple->value->uint16;
+            int length = (int)lenTuple->value->uint16;
             if (length == 0) {
-                entry_log( "put", "vibration" ) ;
+                entry_log("put", "vibration");
                 vibes_short_pulse();
             } else {
-                char *pattern = (char *) patternTuple->value->data;
+                char *pattern = (char *)patternTuple->value->data;
                 if (vibration_parse_pattern(pattern, length) == VIB_PATTERN_ERROR) {
                     pebble_set_error_code(ERROR_ILLEGAL_PARAMETER);
                 } else {
@@ -80,7 +91,7 @@ static void in_received_put_vibration_handler(DictionaryIterator *received) {
                         .durations = vib_data,
                         .num_segments = length,
                     };
-                    entry_log( "put", "vibration" ) ;
+                    entry_log("put", "vibration");
                     vibes_enqueue_custom_pattern(pat);
                 }
             }
@@ -93,7 +104,14 @@ static void in_received_put_vibration_handler(DictionaryIterator *received) {
     }
 }
 
-static void in_received_delete_vibration_handler(DictionaryIterator *received) {
+/*!
+ @brief deleteメソッド,Vibrationプロファイルのメッセージを処理する.
+
+ @param[in] received 受信したメッセージ
+ @param[in] iter レスポンスを格納するイテレータ
+ */
+static void in_received_delete_vibration_handler(DictionaryIterator *received)
+{
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_delete_vibration_handler");
 
     Tuple *attributeTuple = dict_find(received, KEY_ATTRIBUTE);
@@ -108,7 +126,17 @@ static void in_received_delete_vibration_handler(DictionaryIterator *received) {
     }
 }
 
-int in_received_vibration_handler(DictionaryIterator *received) {
+/*!
+ @brief Vibrationプロファイルのメッセージを処理する.
+
+ @param[in] received 受信したメッセージ
+ @param[in] iter レスポンスを格納するイテレータ
+
+ @retval RETURN_SYNC 同期
+ @retval RETURN_ASYNC 非同期
+ */
+int in_received_vibration_handler(DictionaryIterator *received)
+{
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_vibration_handler");
 
     Tuple *actionTuple = dict_find(received, KEY_ACTION);

@@ -1,3 +1,10 @@
+/*
+ binary_profile.h
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #ifndef binary_profile_h
 #define binary_profile_h
 
@@ -29,6 +36,8 @@ void binary_cleanup();
 
 /*!
  @brief 受信中であるかどうかを判定する
+
+ @return under_receive
  */
 bool is_under_receive( void );
 
