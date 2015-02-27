@@ -40,6 +40,8 @@ import java.util.concurrent.TimeUnit;
  * @author NTT DOCOMO, INC.
  */
 public class DataLayerListenerService extends WearableListenerService implements SensorEventListener {
+    /** radian. */
+    private final static double RAD2DEG = 180 / Math.PI;
 
     /** SensorManager. */
     private SensorManager mSensorManager;
@@ -163,9 +165,9 @@ public class DataLayerListenerService extends WearableListenerService implements
                 }
             });
         } else if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            mGyroX = sensorEvent.values[0];
-            mGyroY = sensorEvent.values[1];
-            mGyroZ = sensorEvent.values[2];
+            mGyroX = (float) (sensorEvent.values[0] * RAD2DEG);
+            mGyroY = (float) (sensorEvent.values[1] * RAD2DEG);
+            mGyroZ = (float) (sensorEvent.values[2] * RAD2DEG);
         }
     }
 

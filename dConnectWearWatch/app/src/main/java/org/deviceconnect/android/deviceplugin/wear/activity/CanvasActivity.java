@@ -51,7 +51,7 @@ public class CanvasActivity extends Activity {
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
+    protected void onNewIntent(final Intent intent) {
         super.onNewIntent(intent);
         if (intent != null) {
             refreshImage(intent);
@@ -89,7 +89,7 @@ public class CanvasActivity extends Activity {
      * @param x x
      * @param y y
      */
-    private void setImageBitmap(Bitmap bitmap, int mode, int x, int y) {
+    private void setImageBitmap(final Bitmap bitmap, final int mode, final int x, final int y) {
         switch (mode) {
             default:
             case WearConst.MODE_NORMAL:
