@@ -120,6 +120,8 @@ public class DataLayerListenerService extends WearableListenerService implements
             registerSensor();
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER)) {
             unregisterSensor();
+        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_CANCAS_DELETE_IMAGE)) {
+            deleteCanvas();
         } else {
             if (BuildConfig.DEBUG) {
                 Log.e("Wear", "unknown event");
@@ -247,6 +249,17 @@ public class DataLayerListenerService extends WearableListenerService implements
             mSensorManager.unregisterListener(this);
             mSensorManager = null;
         }
+    }
+
+    /**
+     * Canvasの画面を削除する.
+     */
+    private void deleteCanvas() {
+        Intent intent = new Intent();
+        intent.setClass(this, CanvasActivity.class);
+        intent.setAction(WearConst.ACTION_DELETE_CANVAS);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     /**

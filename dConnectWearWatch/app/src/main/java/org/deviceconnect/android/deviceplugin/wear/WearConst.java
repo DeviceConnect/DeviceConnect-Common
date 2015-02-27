@@ -23,6 +23,10 @@ public final class WearConst {
     public static final String DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER
             = "org.deviceconnect.wear.deivceorienatation.regist";
 
+    /** When Canvas deleted. */
+    public static final String DEVICE_TO_WEAR_CANCAS_DELETE_IMAGE
+            = "org.deviceconnect.wear.canvas.delete";
+
     /** when DeviceOrientation unregister is opened. */
     public static final String DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER
             = "org.deviceconnect.wear.deivceorienatation.unregist";
@@ -33,7 +37,7 @@ public final class WearConst {
     /**
      * Canvas Profile Action.
      */
-    public static final String ACTION_CANVAS = "org.devcieconnect.wear.canvas";
+    public static final String ACTION_DELETE_CANVAS = "org.devcieconnect.wear.canvas.delete";
 
     /**
      * bitmapを受け渡しするためのキー.

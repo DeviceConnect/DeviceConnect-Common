@@ -9,6 +9,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -43,6 +44,7 @@ public class CanvasActivity extends Activity {
         setContentView(R.layout.activity_canvas);
 
         mImageView = (ImageView) findViewById(R.id.canvas_image);
+        mImageView.setVisibility(View.INVISIBLE);
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -63,6 +65,12 @@ public class CanvasActivity extends Activity {
      * @param intent Intent
      */
     private synchronized void refreshImage(final Intent intent) {
+        String action = intent.getAction();
+        if (WearConst.ACTION_DELETE_CANVAS.equals(action)) {
+            finish();
+            return;
+        }
+
         (new AsyncTask<Void, Bitmap, Bitmap>() {
             @Override
             protected Bitmap doInBackground(Void... params) {
@@ -98,12 +106,14 @@ public class CanvasActivity extends Activity {
                 mImageView.setImageBitmap(bitmap);
                 mImageView.setScaleType(ImageView.ScaleType.MATRIX);
                 mImageView.setImageMatrix(matrix);
+                mImageView.setVisibility(View.VISIBLE);
                 break;
             case WearConst.MODE_SCALES:
                 mImageView.setImageBitmap(bitmap);
                 mImageView.setScaleType(ImageView.ScaleType.FIT_START);
                 mImageView.setTranslationX(x);
                 mImageView.setTranslationY(y);
+                mImageView.setVisibility(View.VISIBLE);
                 break;
             case WearConst.MODE_FILLS:
                 BitmapDrawable bd = new BitmapDrawable(getResources(), bitmap);
@@ -113,6 +123,7 @@ public class CanvasActivity extends Activity {
                 mImageView.setScaleType(ImageView.ScaleType.FIT_XY);
                 mImageView.setTranslationX(x);
                 mImageView.setTranslationY(y);
+                mImageView.setVisibility(View.VISIBLE);
                 break;
         }
     }
