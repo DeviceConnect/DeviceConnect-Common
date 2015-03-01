@@ -132,6 +132,15 @@ public final class WearConst {
     /** Broadcast Data Key (Regist). */
     public static final String PARAM_TOUCH_REGIST = "touchRegist";
 
+    /** Broadcast Data Key (Data). */
+    public static final String PARAM_TOUCH_DATA = "data";
+
+    /** Broadcast Intent Key. */
+    public static final String PARAM_DC_WEAR_TOUCH_SVC_TO_ACT = "DC_WEAR_TOUCH_SVC_TO_ACT";
+
+    /** Broadcast Intent Key. */
+    public static final String PARAM_DC_WEAR_TOUCH_ACT_TO_SVC = "DC_WEAR_TOUCH_ACT_TO_SVC";
+
     /** Wear to Android. */
     public static final String WEAR_TO_DEVICE_TOUCH_DATA = "org.deviceconnect.wear.touch.data";
 
@@ -152,12 +161,6 @@ public final class WearConst {
 
     /** Touch (touchcancel). */
     public static final String PARAM_TOUCH_TOUCHCANCEL = "touchcancel";
-
-    /** Broadcast Intent Key. */
-    public static final String PARAM_DC_WEAR_TOUCH_SVC_TO_ACT = "DC_WEAR_TOUCH_SVC_TO_ACT";
-
-    /** Broadcast Intent Key. */
-    public static final String PARAM_DC_WEAR_TOUCH_ACT_TO_SVC = "DC_WEAR_TOUCH_ACT_TO_SVC";
 
     /**
      * Constructor.

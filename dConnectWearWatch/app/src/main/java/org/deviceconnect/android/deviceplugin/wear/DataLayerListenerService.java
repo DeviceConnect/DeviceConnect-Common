@@ -62,6 +62,9 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** The start time for measuring the interval. */
     private long mStartTime;
 
+    /** Broadcast receiver. */
+    MyBroadcastReceiver mReceiver = null;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -72,7 +75,7 @@ public class DataLayerListenerService extends WearableListenerService implements
         mGoogleApiClient.connect();
 
         // set BroadcastReceiver
-        MyBroadcastReceiver mReceiver = new MyBroadcastReceiver();
+        mReceiver = new MyBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC);
         intentFilter.addAction(WearConst.PARAM_DC_WEAR_TOUCH_ACT_TO_SVC);
         registerReceiver(mReceiver, intentFilter);
@@ -97,22 +100,25 @@ public class DataLayerListenerService extends WearableListenerService implements
             mSensorManager.unregisterListener(this);
             mSensorManager = null;
         }
+
+        if (mReceiver != null) {
+            unregisterReceiver(mReceiver);
+        }
     }
 
     @Override
     public void onMessageReceived(final MessageEvent messageEvent) {
-
         String action = messageEvent.getPath();
 
-        if   ((action.equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_REGISTER))
-          ||  (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_REGISTER))) {
+        if  ((action.equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONDOWN_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_KEYEVENT_ONUP_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCH_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHSTART_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHEND_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONDOUBLETAP_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHMOVE_REGISTER))
+          || (action.equals(WearConst.DEVICE_TO_WEAR_TOUCH_ONTOUCHCANCEL_REGISTER))) {
             if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
                 mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
                 mGoogleApiClient.connect();
@@ -241,7 +247,6 @@ public class DataLayerListenerService extends WearableListenerService implements
 
     @Override
     public void onSensorChanged(final SensorEvent sensorEvent) {
-
         if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
             long time = System.currentTimeMillis();
@@ -292,7 +297,6 @@ public class DataLayerListenerService extends WearableListenerService implements
      * @param regist Register string.
      */
     private void execKeyEventActivity(final String regist) {
-
         // Start Activity.
         Intent i = new Intent(this, WearKeyEventProfileActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -311,7 +315,6 @@ public class DataLayerListenerService extends WearableListenerService implements
      * @param regist Register string.
      */
     private void execTouchActivity(final String regist) {
-
         // Start Activity.
         Intent i = new Intent(this, WearTouchProfileActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -330,8 +333,19 @@ public class DataLayerListenerService extends WearableListenerService implements
     public class MyBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(final Context context, final Intent i) {
+            String action = i.getAction();
+            final String data;
+            final String profile;
 
-            final String data = i.getStringExtra(WearConst.PARAM_KEYEVENT_DATA);
+            if (action.equals(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC)) {
+                data = i.getStringExtra(WearConst.PARAM_KEYEVENT_DATA);
+                profile = WearConst.WEAR_TO_DEVICE_KEYEVENT_DATA;
+            } else if (action.equals(WearConst.PARAM_DC_WEAR_TOUCH_ACT_TO_SVC)) {
+                data = i.getStringExtra(WearConst.PARAM_TOUCH_DATA);
+                profile = WearConst.WEAR_TO_DEVICE_TOUCH_DATA;
+            } else {
+                return;
+            }
 
             // Send message data.
             new AsyncTask<Void, Void, Void>() {
@@ -348,7 +362,7 @@ public class DataLayerListenerService extends WearableListenerService implements
                         }
 
                         MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(mGoogleApiClient, mId,
-                                WearConst.WEAR_TO_DEVICE_KEYEVENT_DATA, data.getBytes()).await();
+                                profile, data.getBytes()).await();
                         if (!result.getStatus().isSuccess()) {
                             if (BuildConfig.DEBUG) {
                                 Log.e("WEAR", "Failed to send a key event.");

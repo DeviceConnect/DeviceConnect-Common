@@ -12,7 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.wearable.view.WatchViewStub;
+import android.support.annotation.NonNull;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
@@ -51,16 +51,6 @@ public class WearTouchProfileActivity extends Activity {
      * Constructor.
      */
     public WearTouchProfileActivity() {
-        mGestureDetector = new GestureDetector(this, new SimpleOnGestureListener() {
-
-            @Override
-            public boolean onDoubleTap(final MotionEvent event) {
-                if ((mRegisterEvent & REGIST_FLAG_TOUCH_DOUBLETAP) == 0) {
-                    sendEventData(event);
-                }
-                return super.onDoubleTap(event);
-            }
-        });
     }
 
     @Override
@@ -72,15 +62,10 @@ public class WearTouchProfileActivity extends Activity {
         setRegisterEvent(intent.getStringExtra(WearConst.PARAM_TOUCH_REGIST));
 
         setContentView(R.layout.activity_wear_touch_profile);
-        final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub_touch);
-        stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
-            @Override
-            public void onLayoutInflated(final WatchViewStub stub) {
-            }
-        });
+        mGestureDetector = new GestureDetector(this, mSimpleOnGestureListener);
 
         mReceiver = new MyBroadcastReceiver();
-        mIntentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
+        mIntentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_TOUCH_SVC_TO_ACT);
 
         // For service destruction suppression.
         Intent i = new Intent(WearConst.ACTION_WEAR_PING_SERVICE);
@@ -100,18 +85,21 @@ public class WearTouchProfileActivity extends Activity {
     }
 
     @Override
-    public boolean onTouchEvent(final MotionEvent event) {
+    public boolean dispatchTouchEvent(@NonNull final MotionEvent event) {
         boolean execFlag = false;
-        switch (event.getAction()) {
+        int action = (event.getAction() & MotionEvent.ACTION_MASK);
+        String strAction = null;
+        switch (action) {
             case MotionEvent.ACTION_DOWN: // 1st touch only.
             case MotionEvent.ACTION_POINTER_DOWN: // Others touch.
                 // "ontouch" event processing.
                 if ((mRegisterEvent & REGIST_FLAG_TOUCH_TOUCH) != 0) {
-                    sendEventData(event);
+                    sendEventData(WearConst.PARAM_TOUCH_TOUCH, event);
                 }
 
                 // "ontouchstart" event processing.
                 if ((mRegisterEvent & REGIST_FLAG_TOUCH_TOUCHSTART) != 0) {
+                    strAction = WearConst.PARAM_TOUCH_TOUCHSTART;
                     execFlag = true;
                 }
                 break;
@@ -119,18 +107,21 @@ public class WearTouchProfileActivity extends Activity {
             case MotionEvent.ACTION_POINTER_UP: // Others touch move.
                 // "ontouchend" event processing.
                 if ((mRegisterEvent & REGIST_FLAG_TOUCH_TOUCHEND) != 0) {
+                    strAction = WearConst.PARAM_TOUCH_TOUCHEND;
                     execFlag = true;
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
                 // "ontouchmove" event processing.
                 if ((mRegisterEvent & REGIST_FLAG_TOUCH_TOUCHMOVE) != 0) {
+                    strAction = WearConst.PARAM_TOUCH_TOUCHMOVE;
                     execFlag = true;
                 }
                 break;
             case MotionEvent.ACTION_CANCEL:
                 // "ontouchcancel" event processing.
                 if ((mRegisterEvent & REGIST_FLAG_TOUCH_TOUCHCANCEL) != 0) {
+                    strAction = WearConst.PARAM_TOUCH_TOUCHCANCEL;
                     execFlag = true;
                 }
                 break;
@@ -139,33 +130,34 @@ public class WearTouchProfileActivity extends Activity {
         }
 
         if (execFlag) {
-            sendEventData(event);
+            sendEventData(strAction, event);
         }
-        return mGestureDetector.onTouchEvent(event);
+        return mGestureDetector.onTouchEvent(event) || super.dispatchTouchEvent(event);
     }
 
-//    /**
-//     * Gesture Listener.
-//     */
-//    private final SimpleOnGestureListener mSimpleOnGestureListener = new SimpleOnGestureListener() {
-//
-//        @Override
-//        public boolean onDoubleTap(final MotionEvent event) {
-//            if ((mRegisterEvent & REGIST_FLAG_TOUCH_DOUBLETAP) == 0) {
-//                sendEventData(event);
-//            }
-//            return super.onDoubleTap(event);
-//        }
-//    };
+    /**
+     * Gesture Listener.
+     */
+    private final SimpleOnGestureListener mSimpleOnGestureListener = new SimpleOnGestureListener() {
+        @Override
+        public boolean onDoubleTap(final MotionEvent event) {
+            if ((mRegisterEvent & REGIST_FLAG_TOUCH_DOUBLETAP) != 0) {
+                sendEventData(WearConst.PARAM_TOUCH_DOUBLETAP, event);
+            }
+            return super.onDoubleTap(event);
+        }
+    };
 
     /**
      * Send event data.
      *
+     * @param action Action.
      * @param event MotionEvent.
      */
-    private void sendEventData(final MotionEvent event) {
+    private void sendEventData(final String action, final MotionEvent event) {
         int dataCount = event.getPointerCount();
-        StringBuffer data = new StringBuffer(dataCount);
+        StringBuffer data = new StringBuffer(String.valueOf(dataCount));
+        data.append(",").append(action);
 
         for (int n = 0; n < dataCount; n++) {
             int pointerId = event.getPointerId(n);
@@ -173,8 +165,8 @@ public class WearTouchProfileActivity extends Activity {
         }
 
         // Send key event data to service.
-        Intent i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC);
-        i.putExtra(WearConst.PARAM_KEYEVENT_DATA, new String(data));
+        Intent i = new Intent(WearConst.PARAM_DC_WEAR_TOUCH_ACT_TO_SVC);
+        i.putExtra(WearConst.PARAM_TOUCH_DATA, new String(data));
         sendBroadcast(i);
     }
 
@@ -248,4 +240,5 @@ public class WearTouchProfileActivity extends Activity {
             setRegisterEvent(i.getStringExtra(WearConst.PARAM_TOUCH_REGIST));
         }
     }
+
 }
