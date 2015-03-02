@@ -1,3 +1,9 @@
+/*
+DataLayerListenerService.java
+Copyright (c) 2015NTT DOCOMO,INC.
+Released under the MIT license
+http://opensource.org/licenses/mit-license.php
+ */
 package org.deviceconnect.android.deviceplugin.wear.activity;
 
 import android.app.Activity;
@@ -64,7 +70,7 @@ public class CanvasActivity extends Activity {
      * Refresh image.
      * @param intent Intent
      */
-    private synchronized void refreshImage(final Intent intent) {
+    private void refreshImage(final Intent intent) {
         String action = intent.getAction();
         if (WearConst.ACTION_DELETE_CANVAS.equals(action)) {
             finish();
@@ -97,7 +103,7 @@ public class CanvasActivity extends Activity {
      * @param x x
      * @param y y
      */
-    private void setImageBitmap(final Bitmap bitmap, final int mode, final int x, final int y) {
+    private synchronized void setImageBitmap(final Bitmap bitmap, final int mode, final int x, final int y) {
         switch (mode) {
             default:
             case WearConst.MODE_NORMAL:
@@ -135,7 +141,7 @@ public class CanvasActivity extends Activity {
      */
     private Bitmap loadBitmapFromAsset(final Asset asset) {
         if (asset == null) {
-            throw new IllegalArgumentException("Asset must be non-null");
+            return null;
         }
         GoogleApiClient client = getClient();
         ConnectionResult result =
@@ -146,7 +152,6 @@ public class CanvasActivity extends Activity {
         // convert asset into a file descriptor and block until it's ready
         InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
                 client, asset).await().getInputStream();
-        client.disconnect();
 
         if (assetInputStream == null) {
             return null;
