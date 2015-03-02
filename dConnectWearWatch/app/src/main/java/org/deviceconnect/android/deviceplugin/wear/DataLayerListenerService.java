@@ -6,6 +6,8 @@ http://opensource.org/licenses/mit-license.php
  */
 package org.deviceconnect.android.deviceplugin.wear;
 
+import android.app.ActivityManager;
+import android.app.Service;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -29,6 +31,8 @@ import com.google.android.gms.wearable.WearableListenerService;
 
 import org.deviceconnect.android.deviceplugin.wear.activity.CanvasActivity;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,7 +60,7 @@ public class DataLayerListenerService extends WearableListenerService implements
     private float mGyroZ;
 
     /** Device NodeID . */
-    private String mId;
+    private final List<String> mIds = Collections.synchronizedList(new ArrayList<String>());
 
     /** GyroSensor. */
     private Sensor mGyroSensor;
@@ -80,6 +84,8 @@ public class DataLayerListenerService extends WearableListenerService implements
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mIds.clear();
+        unregisterSensor();
     }
 
     @Override
@@ -111,15 +117,23 @@ public class DataLayerListenerService extends WearableListenerService implements
     @Override
     public void onMessageReceived(final MessageEvent messageEvent) {
         // get id of wear device
-        mId = messageEvent.getSourceNodeId();
+        String id = messageEvent.getSourceNodeId();
         if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_VIBRATION_RUN)) {
             startVibration(messageEvent);
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_VIBRATION_DEL)) {
             stopVibration();
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER)) {
-            registerSensor();
+            if (!mIds.contains(id)) {
+                mIds.add(id);
+            }
+            if (mSensorManager == null) {
+                registerSensor();
+            }
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER)) {
-            unregisterSensor();
+            mIds.remove(id);
+            if (mIds.isEmpty()) {
+                unregisterSensor();
+            }
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_CANCAS_DELETE_IMAGE)) {
             deleteCanvas();
         } else {
@@ -144,24 +158,17 @@ public class DataLayerListenerService extends WearableListenerService implements
             long interval = time - mStartTime;
             mStartTime = time;
 
-            float mAccellX = sensorEvent.values[0];
-            float mAccellY = sensorEvent.values[1];
-            float mAccellZ = sensorEvent.values[2];
-            final String data = mAccellX + "," + mAccellY + "," + mAccellZ
+            float accelX = sensorEvent.values[0];
+            float accelY = sensorEvent.values[1];
+            float accelZ = sensorEvent.values[2];
+            final String data = accelX + "," + accelY + "," + accelZ
                     + "," + mGyroX + "," + mGyroY + "," + mGyroZ + "," + interval;
             mExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    GoogleApiClient client = getClient();
-                    if (!client.isConnected()) {
-                        client.connect();
-                    } else {
-                        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(client, mId,
-                                WearConst.WEAR_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
-                        if (!result.getStatus().isSuccess()) {
-                            if (BuildConfig.DEBUG) {
-                                Log.e("WEAR", "Failed to send a sensor event.");
-                            }
+                    synchronized (mIds) {
+                        for (String id : mIds) {
+                            sendSensorEvent(data, id);
                         }
                     }
                 }
@@ -177,6 +184,31 @@ public class DataLayerListenerService extends WearableListenerService implements
     public void onAccuracyChanged(final Sensor sensor, final int accuracy) {
     }
 
+    /**
+     * センサーイベントをスマホ側に送信する.
+     * @param data 送信するデータ
+     * @param id 送信先のID
+     */
+    private void sendSensorEvent(final String data, final String id) {
+        GoogleApiClient client = getClient();
+        if (!client.isConnected()) {
+            ConnectionResult connectionResult = client.blockingConnect(30, TimeUnit.SECONDS);
+            if (!connectionResult.isSuccess()) {
+                if (BuildConfig.DEBUG) {
+                    Log.e("WEAR", "Failed to connect google play service.");
+                }
+                return;
+            }
+        }
+
+        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(client, id,
+                WearConst.WEAR_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
+        if (!result.getStatus().isSuccess()) {
+            if (BuildConfig.DEBUG) {
+                Log.e("WEAR", "Failed to send a sensor event.");
+            }
+        }
+    }
     /**
      * バイブレーションを開始する.
      * @param messageEvent メッセージ
@@ -210,7 +242,7 @@ public class DataLayerListenerService extends WearableListenerService implements
     /**
      * センサーを登録する.
      */
-    private void registerSensor() {
+    private synchronized void registerSensor() {
         GoogleApiClient client = getClient();
         if (client == null || !client.isConnected()) {
             client = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
@@ -220,6 +252,7 @@ public class DataLayerListenerService extends WearableListenerService implements
                 if (BuildConfig.DEBUG) {
                     Log.e("WEAR", "Failed to connect google play service.");
                 }
+                return;
             }
         }
 
@@ -242,7 +275,7 @@ public class DataLayerListenerService extends WearableListenerService implements
     /**
      * センサーを解除する.
      */
-    private void unregisterSensor() {
+    private synchronized void unregisterSensor() {
         if (mSensorManager != null) {
             mSensorManager.unregisterListener(this, mAccelerometer);
             mSensorManager.unregisterListener(this, mGyroSensor);
@@ -255,11 +288,25 @@ public class DataLayerListenerService extends WearableListenerService implements
      * Canvasの画面を削除する.
      */
     private void deleteCanvas() {
-        Intent intent = new Intent();
-        intent.setClass(this, CanvasActivity.class);
-        intent.setAction(WearConst.ACTION_DELETE_CANVAS);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+        String className = getClassnameOfTopActivity();
+        if (CanvasActivity.class.getName().equals(className)) {
+            Intent intent = new Intent();
+            intent.setClass(this, CanvasActivity.class);
+            intent.setAction(WearConst.ACTION_DELETE_CANVAS);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * 画面の一番上にでているActivityのクラス名を取得.
+     *
+     * @return クラス名
+     */
+    private String getClassnameOfTopActivity() {
+        ActivityManager manager = (ActivityManager) getSystemService(Service.ACTIVITY_SERVICE);
+        String className = manager.getRunningTasks(1).get(0).topActivity.getClassName();
+        return className;
     }
 
     /**
