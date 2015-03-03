@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DataLayerListenerService extends WearableListenerService implements SensorEventListener {
     /** radian. */
-    private final static double RAD2DEG = 180 / Math.PI;
+    private static final double RAD2DEG = 180 / Math.PI;
 
     /** SensorManager. */
     private SensorManager mSensorManager;
@@ -89,11 +89,11 @@ public class DataLayerListenerService extends WearableListenerService implements
     }
 
     @Override
-    public void onDataChanged(DataEventBuffer dataEvents) {
+    public void onDataChanged(final DataEventBuffer dataEvents) {
         super.onDataChanged(dataEvents);
         for (DataEvent event : dataEvents) {
-            if (event.getType() == DataEvent.TYPE_CHANGED &&
-                    event.getDataItem().getUri().getPath().equals(WearConst.PATH_CANVAS)) {
+            if (event.getType() == DataEvent.TYPE_CHANGED
+                    && event.getDataItem().getUri().getPath().equals(WearConst.PATH_CANVAS)) {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
                 DataMap map = dataMapItem.getDataMap();
 
@@ -305,8 +305,7 @@ public class DataLayerListenerService extends WearableListenerService implements
      */
     private String getClassnameOfTopActivity() {
         ActivityManager manager = (ActivityManager) getSystemService(Service.ACTIVITY_SERVICE);
-        String className = manager.getRunningTasks(1).get(0).topActivity.getClassName();
-        return className;
+        return manager.getRunningTasks(1).get(0).topActivity.getClassName();
     }
 
     /**
