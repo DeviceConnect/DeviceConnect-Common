@@ -6,23 +6,36 @@ http://opensource.org/licenses/mit-license.php
  */
 package org.deviceconnect.android.deviceplugin.wear;
 
+import android.app.ActivityManager;
+import android.app.Service;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.AsyncTask;
 import android.os.Vibrator;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
+import org.deviceconnect.android.deviceplugin.wear.activity.CanvasActivity;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,20 +44,11 @@ import java.util.concurrent.TimeUnit;
  * @author NTT DOCOMO, INC.
  */
 public class DataLayerListenerService extends WearableListenerService implements SensorEventListener {
-    /** Google API Client. */
-    private GoogleApiClient mGoogleApiClient;
+    /** radian. */
+    private static final double RAD2DEG = 180 / Math.PI;
 
     /** SensorManager. */
     private SensorManager mSensorManager;
-
-    /** 加速度 x. */
-    private float mAccellX;
-
-    /** 加速度 y. */
-    private float mAccellY;
-
-    /** 加速度 z. */
-    private float mAccellZ;
 
     /** Gyro x. */
     private float mGyroX;
@@ -55,11 +59,11 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** Gyro z. */
     private float mGyroZ;
 
-    /** DeviceのNodeID . */
-    private String mId;
+    /** Device NodeID . */
+    private final List<String> mIds = Collections.synchronizedList(new ArrayList<String>());
 
     /** GyroSensor. */
-    private Sensor myGyroSensor;
+    private Sensor mGyroSensor;
 
     /** AcceleratorSensor. */
     private Sensor mAccelerometer;
@@ -67,84 +71,74 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** The start time for measuring the interval. */
     private long mStartTime;
 
+    /**
+     * スレッド管理用クラス.
+     */
+    private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
+
     @Override
     public void onCreate() {
         super.onCreate();
-
-        // Define google play service
-        mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
-        // Connect google play service
-        mGoogleApiClient.connect();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mGoogleApiClient != null) {
-            // Disconnect google play service.
-            mGoogleApiClient.disconnect();
+        mIds.clear();
+        unregisterSensor();
+    }
+
+    @Override
+    public void onDataChanged(final DataEventBuffer dataEvents) {
+        super.onDataChanged(dataEvents);
+        for (DataEvent event : dataEvents) {
+            if (event.getType() == DataEvent.TYPE_CHANGED
+                    && event.getDataItem().getUri().getPath().equals(WearConst.PATH_CANVAS)) {
+                DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
+                DataMap map = dataMapItem.getDataMap();
+
+                Asset profileAsset = map.getAsset(WearConst.PARAM_BITMAP);
+                int x = map.getInt(WearConst.PARAM_X);
+                int y = map.getInt(WearConst.PARAM_Y);
+                int mode = map.getInt(WearConst.PARAM_MODE);
+
+                Intent intent = new Intent();
+                intent.setClass(this, CanvasActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.putExtra(WearConst.PARAM_BITMAP, profileAsset);
+                intent.putExtra(WearConst.PARAM_X, x);
+                intent.putExtra(WearConst.PARAM_Y, y);
+                intent.putExtra(WearConst.PARAM_MODE, mode);
+                startActivity(intent);
+            }
         }
     }
 
     @Override
     public void onMessageReceived(final MessageEvent messageEvent) {
-
         // get id of wear device
-        mId = messageEvent.getSourceNodeId();
+        String id = messageEvent.getSourceNodeId();
         if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_VIBRATION_RUN)) {
-
-            // get vibration pattern
-            String mPattern = new String(messageEvent.getData());
-
-            // Make array of pattern
-            String[] mPatternArray = mPattern.split(",", 0);
-            long[] mPatternLong = new long[mPatternArray.length + 1];
-            mPatternLong[0] = 0;
-            for (int i = 1; i < mPatternLong.length; i++) {
-                mPatternLong[i] = Integer.parseInt(mPatternArray[i - 1]);
-            }
-
-            // vibrate
-            Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-            vibrator.vibrate(mPatternLong, -1);
+            startVibration(messageEvent);
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_VIBRATION_DEL)) {
-
-            // stop vibrate
-            Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-            vibrator.cancel();
+            stopVibration();
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_REGISTER)) {
-
-            if (mGoogleApiClient == null || !mGoogleApiClient.isConnected()) {
-                mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
-                mGoogleApiClient.connect();
-                ConnectionResult connectionResult = mGoogleApiClient.blockingConnect(30, TimeUnit.SECONDS);
-                if (!connectionResult.isSuccess()) {
-                    if (BuildConfig.DEBUG) {
-                        Log.e("WEAR", "Failed to connect google play service.");
-                    }
-                }
+            if (!mIds.contains(id)) {
+                mIds.add(id);
             }
-
-            mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-            List<Sensor> accelSensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-            if (accelSensors.size() > 0) {
-                mAccelerometer = accelSensors.get(0);
-                mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+            if (mSensorManager == null) {
+                registerSensor();
             }
-
-            List<Sensor> gyroSensors = mSensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
-            if (gyroSensors.size() > 0) {
-                myGyroSensor = gyroSensors.get(0);
-                mSensorManager.registerListener(this, myGyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            }
-
-            mStartTime = System.currentTimeMillis();
         } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_DEIVCEORIENTATION_UNREGISTER)) {
-            if (mSensorManager != null) {
-                mSensorManager.unregisterListener(this, mAccelerometer);
-                mSensorManager.unregisterListener(this, myGyroSensor);
-                mSensorManager.unregisterListener(this);
-                mSensorManager = null;
+            mIds.remove(id);
+            if (mIds.isEmpty()) {
+                unregisterSensor();
+            }
+        } else if (messageEvent.getPath().equals(WearConst.DEVICE_TO_WEAR_CANCAS_DELETE_IMAGE)) {
+            deleteCanvas();
+        } else {
+            if (BuildConfig.DEBUG) {
+                Log.e("Wear", "unknown event");
             }
         }
     }
@@ -159,41 +153,30 @@ public class DataLayerListenerService extends WearableListenerService implements
 
     @Override
     public void onSensorChanged(final SensorEvent sensorEvent) {
-
         if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-
             long time = System.currentTimeMillis();
             long interval = time - mStartTime;
             mStartTime = time;
-            mAccellX = sensorEvent.values[0];
-            mAccellY = sensorEvent.values[1];
-            mAccellZ = sensorEvent.values[2];
-            final String data = mAccellX + "," + mAccellY + "," + mAccellZ
-                    + "," + mGyroX + "," + mGyroY + "," + mGyroZ + "," + interval;
 
-            // メッセージの送信
-            new AsyncTask<Void, Void, Void>() {
+            float accelX = sensorEvent.values[0];
+            float accelY = sensorEvent.values[1];
+            float accelZ = sensorEvent.values[2];
+            final String data = accelX + "," + accelY + "," + accelZ
+                    + "," + mGyroX + "," + mGyroY + "," + mGyroZ + "," + interval;
+            mExecutorService.execute(new Runnable() {
                 @Override
-                protected Void doInBackground(final Void... params) {
-                    if (!mGoogleApiClient.isConnected()) {
-                        mGoogleApiClient.connect();
-                    } else {
-                        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(mGoogleApiClient, mId,
-                                WearConst.WERA_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
-                        if (!result.getStatus().isSuccess()) {
-                            if (BuildConfig.DEBUG) {
-                                Log.e("WEAR", "Failed to send a sensor event.");
-                            }
+                public void run() {
+                    synchronized (mIds) {
+                        for (String id : mIds) {
+                            sendSensorEvent(data, id);
                         }
                     }
-                    return null;
                 }
-            }.execute();
-
+            });
         } else if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            mGyroX = sensorEvent.values[0];
-            mGyroY = sensorEvent.values[1];
-            mGyroZ = sensorEvent.values[2];
+            mGyroX = (float) (sensorEvent.values[0] * RAD2DEG);
+            mGyroY = (float) (sensorEvent.values[1] * RAD2DEG);
+            mGyroZ = (float) (sensorEvent.values[2] * RAD2DEG);
         }
     }
 
@@ -201,4 +184,135 @@ public class DataLayerListenerService extends WearableListenerService implements
     public void onAccuracyChanged(final Sensor sensor, final int accuracy) {
     }
 
+    /**
+     * センサーイベントをスマホ側に送信する.
+     * @param data 送信するデータ
+     * @param id 送信先のID
+     */
+    private void sendSensorEvent(final String data, final String id) {
+        GoogleApiClient client = getClient();
+        if (!client.isConnected()) {
+            ConnectionResult connectionResult = client.blockingConnect(30, TimeUnit.SECONDS);
+            if (!connectionResult.isSuccess()) {
+                if (BuildConfig.DEBUG) {
+                    Log.e("WEAR", "Failed to connect google play service.");
+                }
+                return;
+            }
+        }
+
+        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(client, id,
+                WearConst.WEAR_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
+        if (!result.getStatus().isSuccess()) {
+            if (BuildConfig.DEBUG) {
+                Log.e("WEAR", "Failed to send a sensor event.");
+            }
+        }
+    }
+    /**
+     * バイブレーションを開始する.
+     * @param messageEvent メッセージ
+     */
+    private void startVibration(final MessageEvent messageEvent) {
+        // get vibration pattern
+        String mPattern = new String(messageEvent.getData());
+
+        // Make array of pattern
+        String[] mPatternArray = mPattern.split(",", 0);
+        long[] mPatternLong = new long[mPatternArray.length + 1];
+        mPatternLong[0] = 0;
+        for (int i = 1; i < mPatternLong.length; i++) {
+            mPatternLong[i] = Integer.parseInt(mPatternArray[i - 1]);
+        }
+
+        // vibrate
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        vibrator.vibrate(mPatternLong, -1);
+    }
+
+    /**
+     * バイブレーションを停止する.
+     */
+    private void stopVibration() {
+        // stop vibrate
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        vibrator.cancel();
+    }
+
+    /**
+     * センサーを登録する.
+     */
+    private synchronized void registerSensor() {
+        GoogleApiClient client = getClient();
+        if (client == null || !client.isConnected()) {
+            client = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
+            client.connect();
+            ConnectionResult connectionResult = client.blockingConnect(30, TimeUnit.SECONDS);
+            if (!connectionResult.isSuccess()) {
+                if (BuildConfig.DEBUG) {
+                    Log.e("WEAR", "Failed to connect google play service.");
+                }
+                return;
+            }
+        }
+
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        List<Sensor> accelSensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+        if (accelSensors.size() > 0) {
+            mAccelerometer = accelSensors.get(0);
+            mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+
+        List<Sensor> gyroSensors = mSensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
+        if (gyroSensors.size() > 0) {
+            mGyroSensor = gyroSensors.get(0);
+            mSensorManager.registerListener(this, mGyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+
+        mStartTime = System.currentTimeMillis();
+    }
+
+    /**
+     * センサーを解除する.
+     */
+    private synchronized void unregisterSensor() {
+        if (mSensorManager != null) {
+            mSensorManager.unregisterListener(this, mAccelerometer);
+            mSensorManager.unregisterListener(this, mGyroSensor);
+            mSensorManager.unregisterListener(this);
+            mSensorManager = null;
+        }
+    }
+
+    /**
+     * Canvasの画面を削除する.
+     */
+    private void deleteCanvas() {
+        String className = getClassnameOfTopActivity();
+        if (CanvasActivity.class.getName().equals(className)) {
+            Intent intent = new Intent();
+            intent.setClass(this, CanvasActivity.class);
+            intent.setAction(WearConst.ACTION_DELETE_CANVAS);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * 画面の一番上にでているActivityのクラス名を取得.
+     *
+     * @return クラス名
+     */
+    private String getClassnameOfTopActivity() {
+        ActivityManager manager = (ActivityManager) getSystemService(Service.ACTIVITY_SERVICE);
+        return manager.getRunningTasks(1).get(0).topActivity.getClassName();
+    }
+
+    /**
+     * GoogleApiClientを取得する.
+     * @return GoogleApiClient
+     */
+    private GoogleApiClient getClient() {
+        return ((WearApplication) getApplication()).getGoogleApiClient();
+    }
 }
