@@ -74,6 +74,9 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** The start time for measuring the interval. */
     private long mStartTime;
 
+    /** Broadcast receiver. */
+    MyBroadcastReceiver mReceiver = null;
+
     /**
      * スレッド管理用クラス.
      */
@@ -83,7 +86,7 @@ public class DataLayerListenerService extends WearableListenerService implements
     public void onCreate() {
         super.onCreate();
         // set BroadcastReceiver
-        MyBroadcastReceiver mReceiver = new MyBroadcastReceiver();
+        mReceiver = new MyBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC);
         registerReceiver(mReceiver, intentFilter);
     }
@@ -93,6 +96,7 @@ public class DataLayerListenerService extends WearableListenerService implements
         super.onDestroy();
         mIds.clear();
         unregisterSensor();
+        unregisterReceiver(mReceiver);
     }
 
     @Override
