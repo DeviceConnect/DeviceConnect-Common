@@ -1,3 +1,10 @@
+/*
+ system_profile.h
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #ifndef system_profile_h
 #define system_profile_h
 

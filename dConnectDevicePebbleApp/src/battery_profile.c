@@ -1,3 +1,10 @@
+/*
+ battery_profile.c
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #include "pebble_device_plugin_defines.h"
 #include "pebble_device_plugin.h"
 #include "battery_profile.h"
@@ -6,17 +13,17 @@
 /*!
  @brief バッテリーの最後の状態を保存する
  */
-static BatteryChargeState last_state ;
+static BatteryChargeState last_state;
 
 /*!
  @brief onchargingchange イベントが有効かどうか
  */
-static bool event_onchargingchange = false ;
+static bool event_onchargingchange = false;
 
 /*!
  @brief onbatterychange イベントが有効かどうか
  */
-static bool event_onbatterychange = false ;
+static bool event_onbatterychange = false;
 
 
 /*!
@@ -26,15 +33,19 @@ static bool event_onbatterychange = false ;
  */
 static void service_unsubscribe( void )
 {
-    if( ( event_onchargingchange == false ) && ( event_onbatterychange == false ) ) {
+    if ((event_onchargingchange == false) && (event_onbatterychange == false)) {
         battery_state_service_unsubscribe();
     }
 }
+
+/*!
+ @brief イベントを強制的に中止する
+ */
 void battery_service_unsubscribe_force( void )
 {
     battery_state_service_unsubscribe();
-    event_onchargingchange = false ;
-    event_onbatterychange = false ;
+    event_onchargingchange = false;
+    event_onbatterychange = false;
 }
 
 /*!
@@ -48,7 +59,7 @@ static void send_battery_percent( int percent )
     orientation_service_pause();
 
 	if (!mq_push()) {
-		entry_log( "error", "send_battery_percent" ) ;
+		entry_log("error", "send_battery_percent");
 		return;
 	}
 	
@@ -60,7 +71,7 @@ static void send_battery_percent( int percent )
 	send_message();
 
 	pebble_sniff_interval_normal();
-    entry_log( "send", "send_battery_percent" ) ;
+    entry_log("send", "send_battery_percent");
 }
 
 /*!
@@ -71,7 +82,7 @@ static void send_battery_percent( int percent )
 static void send_battery_charging( bool charging )
 {
 	if (!mq_push()) {
-		entry_log( "error", "send_battery_charging" ) ;
+		entry_log("error", "send_battery_charging");
 		return;
 	}
 	
@@ -86,7 +97,7 @@ static void send_battery_charging( bool charging )
 	send_message();
 	
     pebble_sniff_interval_normal();
-    entry_log( "send", "battery_charging" ) ;
+    entry_log("send", "battery_charging");
 }
 
 /*!
@@ -100,27 +111,26 @@ static void send_battery_charging( bool charging )
  @return last と now を比較して、充電状態か電池容量のどちらかが変化した場合に true を返す
 
  */
-static bool get_changed_status( BatteryChargeState* last, BatteryChargeState* now, bool* is_charging_changed, bool* is_battery_changed )
+static bool get_changed_status(BatteryChargeState* last, BatteryChargeState* now, bool* is_charging_changed,
+                               bool* is_battery_changed )
 {
-    if( last->is_plugged != now->is_plugged ) {
-        *is_charging_changed = true ;
+    if (last->is_plugged != now->is_plugged) {
+        *is_charging_changed = true;
+    } else {
+        *is_charging_changed = false;
     }
-    else {
-        *is_charging_changed = false ;
+    if (last->charge_percent != now->charge_percent) {
+        *is_battery_changed = true;
+    } else {
+        *is_battery_changed = false;
     }
-    if( last->charge_percent != now->charge_percent ) {
-        *is_battery_changed = true ;
+    if (*is_charging_changed) {
+        return true;
     }
-    else {
-        *is_battery_changed = false ;
+    if (*is_battery_changed) {
+        return true;
     }
-    if( *is_charging_changed ) {
-        return true ;
-    }
-    if( *is_battery_changed ) {
-        return true ;
-    }
-    return false ;
+    return false;
 }
 
 
@@ -131,22 +141,22 @@ static bool get_changed_status( BatteryChargeState* last, BatteryChargeState* no
 
  */
 static void in_event_battery_handler(BatteryChargeState state) {
-    bool is_charging_changed, is_battery_changed ;
-    if( get_changed_status( &last_state, &state, &is_charging_changed, &is_battery_changed ) == false ) {
-        return ;
+    bool is_charging_changed, is_battery_changed;
+    if (get_changed_status(&last_state, &state, &is_charging_changed, &is_battery_changed) == false) {
+        return;
     }
 
-    if( is_charging_changed && event_onchargingchange ) {
-        entry_log( "event","onchargingchange" ) ;
+    if (is_charging_changed && event_onchargingchange) {
+        entry_log("event","onchargingchange");
         DBG_LOG(APP_LOG_LEVEL_DEBUG, "event_onchargingchange %d",(int)state.is_plugged);
-        send_battery_charging( state.is_plugged ) ;
+        send_battery_charging(state.is_plugged);
     }
-    if( is_battery_changed && event_onbatterychange ) {
-        entry_log( "event","onbatterychange" ) ;
-        send_battery_percent( state.charge_percent ) ;
+    if (is_battery_changed && event_onbatterychange) {
+        entry_log("event","onbatterychange");
+        send_battery_percent(state.charge_percent);
     }
-	last_state = state ;
-	return ;
+	last_state = state;
+	return;
 }
 
 /*!
@@ -166,7 +176,7 @@ static void in_received_get_battery_handler(DictionaryIterator *received) {
             // 加速度センサーが動いている場合には、一瞬止める
             orientation_service_pause();
 
-            entry_log( "get", "BATTERY_ATTRIBUTE_ALL" ) ;
+            entry_log("get", "BATTERY_ATTRIBUTE_ALL");
             BatteryChargeState state = battery_state_service_peek();
             // チャージングフラグ
             int charging = state.is_plugged ? BATTERY_CHARGING_ON : BATTERY_CHARGING_OFF;
@@ -182,7 +192,7 @@ static void in_received_get_battery_handler(DictionaryIterator *received) {
             // 加速度センサーが動いている場合には、一瞬止める
             orientation_service_pause();
 
-            entry_log( "get", "BATTERY_ATTRIBUTE_CHARING" ) ;
+            entry_log("get", "BATTERY_ATTRIBUTE_CHARING");
             BatteryChargeState state = battery_state_service_peek();
             int charging = state.is_plugged ? BATTERY_CHARGING_ON : BATTERY_CHARGING_OFF;
             // チャージングフラグ
@@ -192,13 +202,13 @@ static void in_received_get_battery_handler(DictionaryIterator *received) {
             // 加速度センサーが動いている場合には、一瞬止める
             orientation_service_pause();
 
-            entry_log( "get", "BATTERY_ATTRIBUTE_LEVEL" ) ;
+            entry_log("get", "BATTERY_ATTRIBUTE_LEVEL");
             BatteryChargeState state = battery_state_service_peek();
             // パーセンテージ
 			mq_kv_set(KEY_PARAM_BATTERY_LEVEL, state.charge_percent);
         }    break;
         default:
-            entry_log( "get", "BATTERY error" ) ;
+            entry_log("get", "BATTERY error");
             // not support
             pebble_set_error_code(ERROR_NOT_SUPPORT_ATTRIBUTE);
             break;
@@ -219,19 +229,19 @@ static void in_received_put_battery_handler(DictionaryIterator *received) {
     Tuple *attributeTuple = dict_find(received, KEY_ATTRIBUTE);
     switch (attributeTuple->value->uint8) {
     case BATTERY_ATTRIBUTE_ON_CHARGING_CHANGE:
-        entry_log( "put battery", "ON_CHARGING_CHANGE" ) ;
-        event_onchargingchange = true ;
+        entry_log("put battery", "ON_CHARGING_CHANGE");
+        event_onchargingchange = true;
         last_state = battery_state_service_peek();
         battery_state_service_subscribe(&in_event_battery_handler);
         break;
     case BATTERY_ATTRIBUTE_ON_BATTERY_CHANGE:
-        entry_log( "put battery", "ON_BATTERY_CHANGE" ) ;
-        event_onbatterychange = true ;
+        entry_log("put battery", "ON_BATTERY_CHANGE");
+        event_onbatterychange = true;
         last_state = battery_state_service_peek();
         battery_state_service_subscribe(&in_event_battery_handler);
         break;
     default:
-        entry_log( "put battery", "not support" ) ;
+        entry_log("put battery", "not support");
         pebble_set_error_code(ERROR_NOT_SUPPORT_ATTRIBUTE);
         break;
     }
@@ -251,14 +261,14 @@ static void in_received_delete_battery_handler(DictionaryIterator *received) {
     Tuple *attributeTuple = dict_find(received, KEY_ATTRIBUTE);
     switch (attributeTuple->value->uint8) {
     case BATTERY_ATTRIBUTE_ON_CHARGING_CHANGE:
-        entry_log( "delete battery", "ON_CHARGING_CHANGE" ) ;
-        event_onchargingchange = false ;
-        service_unsubscribe() ;
+        entry_log("delete battery", "ON_CHARGING_CHANGE");
+        event_onchargingchange = false;
+        service_unsubscribe();
         break;
     case BATTERY_ATTRIBUTE_ON_BATTERY_CHANGE:
-        entry_log( "delete battery", "ON_BATTERY_CHANGE" ) ;
-        event_onbatterychange = false ;
-        service_unsubscribe() ;
+        entry_log("delete battery", "ON_BATTERY_CHANGE");
+        event_onbatterychange = false;
+        service_unsubscribe();
         break;
     default:
         // not support
@@ -267,6 +277,15 @@ static void in_received_delete_battery_handler(DictionaryIterator *received) {
     }
 }
 
+/*!
+ @brief バッテリープロファイルの処理を行う.
+
+ @param received 受信したメッセージデータ
+ @param iter レスポンスを格納するイテレータ
+
+ @retval RETURN_SYNC 同期
+ @retval RETURN_ASYNC 非同期
+ */
 int in_received_battery_handler(DictionaryIterator *received) {
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_battery_handler");
 
@@ -283,7 +302,7 @@ int in_received_battery_handler(DictionaryIterator *received) {
         break;
     case ACTION_POST:
     default:
-        entry_log( "battery ", "NOT_SUPPORT" ) ;
+        entry_log("battery ", "NOT_SUPPORT");
         // not support.
         pebble_set_error_code(ERROR_NOT_SUPPORT_ACTION);
         break;

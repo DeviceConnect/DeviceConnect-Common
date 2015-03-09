@@ -1,3 +1,10 @@
+/*
+ pebble_device_plugin.c
+ Copyright (c) 2014 NTT DOCOMO,INC.
+ Released under the MIT license
+ http://opensource.org/licenses/mit-license.php
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -36,54 +43,101 @@ static short pbi_image_width ;
  */
 static MenuLayer *menu_layer;
 
-void pebble_set_error_code(int error_code) {
+/*!
+ @brief エラーコードを設定する。
+
+ @param[in] error_code エラーコード
+ */
+void pebble_set_error_code(int error_code)
+{
 	mq_kv_set(KEY_PARAM_RESULT, RESULT_ERROR);
 	mq_kv_set(KEY_PARAM_ERROR_CODE, error_code);
 
-	char buf[ 20 ] ;
-	snprintf( buf, sizeof( buf), "code=%d", error_code ) ;
-	entry_log( "error", buf ) ;
+	char buf[20];
+	snprintf(buf, sizeof(buf), "code=%d", error_code);
+	entry_log("error", buf);
 }
 
-void pebble_sniff_interval_normal( void )
+/*!
+ @brief Bluetooth の通信速度を上げる(消費電力は高くなる)。
+ */
+void pebble_sniff_interval_normal(void)
 {
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);//この行を削除してはいけない
     app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 }
-void pebble_sniff_interval_reduced( void )
+
+/*!
+ @brief Bluetooth の通信速度を下げる(消費電力は低くなる)。
+ */
+void pebble_sniff_interval_reduced(void)
 {
     app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);//この行を削除してはいけない
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 }
 
-void entry_log( char* title, char* contents )
+/*!
+ @brief 画面上にログを追加する
+
+ @param[in] title 文字列
+ @param[in] contents 文字列
+ */
+void entry_log(char* title, char* contents)
 {
-    entry_menu_item( title, contents, false ) ;
-    menu_layer_reload_data( menu_layer) ;
-}
-void entry_log2( char* title, char* contents )
-{
-    for( int i = 0 ; i < 2 ; i ++ ) {
-        entry_menu_item( title, contents, false ) ;
-    }
-    menu_layer_reload_data( menu_layer) ;
-}
-void entry_gbitmap_log( char* title, void* contents )
-{
-    entry_menu_item( title, contents, true ) ;
-    menu_layer_reload_data( menu_layer) ;
-}
-void replace_last_log( char* title, char* contents )
-{
-    replace_menu_item( title, contents, false ) ;
-    menu_layer_reload_data( menu_layer) ;
+    entry_menu_item(title, contents, false);
+    menu_layer_reload_data(menu_layer);
 }
 
-void pebble_set_bitmap(uint8_t* data, int32_t size) {
+/*!
+ @brief 画面上にログを2重に追加する。これは、replace_last_log() との兼ね合いで使用する。
+
+ @param[in] title 文字列
+ @param[in] contents 文字列
+ */
+void entry_log2(char* title, char* contents)
+{
+    for (int i = 0; i < 2; i++) {
+        entry_menu_item(title, contents, false);
+    }
+    menu_layer_reload_data(menu_layer);
+}
+
+/*!
+ @brief 画像ログの表示。
+ 
+ @param[in] title タイトル。
+ @param[in] contents コンテンツ。
+ */
+void entry_gbitmap_log(char* title, void* contents)
+{
+    entry_menu_item(title, contents, true);
+    menu_layer_reload_data(menu_layer);
+}
+
+/*!
+ @brief 最新のログと置き換える
+
+ @param[in] title 文字列
+ @param[in] contents 文字列
+ */
+void replace_last_log(char* title, char* contents)
+{
+    replace_menu_item(title, contents, false);
+    menu_layer_reload_data(menu_layer);
+}
+
+/*!
+ @brief 画面に指定された画像を表示する。
+
+ @param[in] data GBitmapのデータ
+ @param[in] size データサイズ
+ */
+void pebble_set_bitmap(uint8_t* data, int32_t size)
+{
     if (data == NULL) {
         return;
     }
-    pbi_image_width = get_pbi_image_width( data ) ;
+    pbi_image_width = get_pbi_image_width(data);
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "width=%d",pbi_image_width);
 
     // 前に表示していたbitmapを削除
@@ -92,7 +146,7 @@ void pebble_set_bitmap(uint8_t* data, int32_t size) {
     }
 
     bitmap = gbitmap_create_with_data((const uint8_t *) data);
-    entry_gbitmap_log( "bitmap", bitmap ) ;
+    entry_gbitmap_log("bitmap", bitmap);
 }
 
 /*!
@@ -101,7 +155,8 @@ void pebble_set_bitmap(uint8_t* data, int32_t size) {
  @param[in] received 受信データ
  @param[in] context コンテキスト
  */
-static void in_received_handler(DictionaryIterator *received, void *context) {
+static void in_received_handler(DictionaryIterator *received, void *context)
+{
     Tuple *profileTuple = dict_find(received, KEY_PROFILE);
     if (profileTuple != NULL) {
         if (profileTuple->value->uint8 == PROFILE_BINARY) {
@@ -119,7 +174,7 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     }
 
 	if (!mq_push()) {
-		entry_log( "error", "in_received_handler" ) ;
+		entry_log("error", "in_received_handler");
 		return;
 	}
 
@@ -147,9 +202,9 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
         break;
     default:
         {
-            char buf[ 20 ] ;
-            snprintf( buf, sizeof( buf), "profile=%d error", profileTuple->value->uint8) ;
-            entry_log( "profile error", buf ) ;
+            char buf[20];
+            snprintf(buf, sizeof(buf), "profile=%d error", profileTuple->value->uint8);
+            entry_log("profile error", buf);
         }
 
         pebble_set_error_code(ERROR_NOT_SUPPORT_PROFILE);
@@ -168,11 +223,12 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
  @param[in] reasion 受信失敗理由
  @param[in] context コンテキスト
  */
-static void in_dropped_handler(AppMessageResult reason, void *context) {
+static void in_dropped_handler(AppMessageResult reason, void *context)
+{
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "in dropped handler");
-    char buf[ 20 ] ;
-    snprintf( buf, sizeof( buf), "err=0x%x", reason ) ;
-    entry_log( "receive error", buf ) ;
+    char buf[20];
+    snprintf(buf, sizeof(buf), "err=0x%x", reason);
+    entry_log("receive error", buf);
 }
 
 /*!
@@ -181,7 +237,8 @@ static void in_dropped_handler(AppMessageResult reason, void *context) {
  @param[in] sent 送信したデータ
  @param[in] context コンテキスト
  */
-static void out_sent_handler(DictionaryIterator *sent, void *context) {
+static void out_sent_handler(DictionaryIterator *sent, void *context)
+{
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "out sent handler");
 	
 	success_message();
@@ -194,13 +251,14 @@ static void out_sent_handler(DictionaryIterator *sent, void *context) {
  @param[in] reason 送信失敗理由
  @param[in] context コンテキスト
  */
-static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
+static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context)
+{
 	DBG_LOG(APP_LOG_LEVEL_DEBUG, "out failed handler");
 	
-    if( reason != APP_MSG_OK ) {
-        char buf[ 20 ] ;
-        snprintf( buf, sizeof( buf), "err=0x%x", reason ) ;
-        entry_log( "out_failed_handler", buf ) ;
+    if (reason != APP_MSG_OK) {
+        char buf[20];
+        snprintf(buf, sizeof(buf), "err=0x%x", reason);
+        entry_log("out_failed_handler", buf);
     }
 
     switch (reason) {
@@ -252,7 +310,6 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
 	retry_message();
 }
 
-
 /*!
  @brief メニューのセクション個数を返す。OS から呼び出されるコールバック関数である。
 
@@ -260,7 +317,8 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
  @param[in] data データ
  @param[out] このアプリは、セクションは1つしか使わないので、常に1を返す
  */
-static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) {
+static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data)
+{
     return 1;
 }
 
@@ -272,8 +330,9 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
  @param[in] data データ
  @param[out] このアプリは、セクションは1つしか使わないので、常にセクション0に対応するメニューの個数を返す
  */
-static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
-    return how_many_menu_item() ;
+static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
+{
+    return how_many_menu_item();
 }
 
 /*!
@@ -284,8 +343,9 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
  @param[in] data データ
  @param[out] ヘッダー文字列の高さ。
  */
-static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
-    return 2 ;//セクションは表示しても意味が無いので、最小の値にしておく
+static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
+{
+    return 2;    //セクションは表示しても意味が無いので、最小の値にしておく
 }
 
 /*!
@@ -298,11 +358,11 @@ static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t s
  */
 int16_t menu_get_cell_height(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context)
 {
-    MenuItem* menu = get_menu_item( cell_index->row ) ;
-    if( menu->is_gbitmap ) {
-        return 120 ;// GBitmap の場合
+    MenuItem* menu = get_menu_item(cell_index->row);
+    if (menu->is_gbitmap) {
+        return 120;    // GBitmap の場合
     }
-    return 36 ;//文字列の場合
+    return 36;    //文字列の場合
 }
 
 /*!
@@ -313,8 +373,9 @@ int16_t menu_get_cell_height(struct MenuLayer *menu_layer, MenuIndex *cell_index
  @param[in] section_index セクション番号
  @param[in] data data
  */
-static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
-    menu_cell_basic_header_draw(ctx, cell_layer, " ");//メニューセクションは1つだけ
+static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data)
+{
+    menu_cell_basic_header_draw(ctx, cell_layer, " ");    //メニューセクションは1つだけ
 }
 
 /*!
@@ -325,26 +386,25 @@ static void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, ui
  @param[in] cell_index セクション番号とメニュー番号情報が入っている構造体
  @param[in] data data
  */
-static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-
-    MenuItem* menu = get_menu_item( cell_index->row ) ;
-    if( menu->is_gbitmap ) {
-        if( is_under_receive() ) {
-            menu_cell_basic_draw(ctx, cell_layer, "recieving...", "image", NULL );
-        }
-        else {//バイナリデータ受信中でなければ描画する
-            GSize draw_size = layer_get_frame((Layer*) cell_layer).size ;
-            if( pbi_image_width < draw_size.w ) {
-                draw_size.w = pbi_image_width ;
+static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data)
+{
+    MenuItem* menu = get_menu_item(cell_index->row);
+    if (menu->is_gbitmap) {
+        if (is_under_receive()) {
+            menu_cell_basic_draw(ctx, cell_layer, "recieving...", "image", NULL);
+        } else {    //バイナリデータ受信中でなければ描画する
+            GSize draw_size = layer_get_frame((Layer*) cell_layer).size;
+            if (pbi_image_width < draw_size.w) {
+                draw_size.w = pbi_image_width;
             }
             DBG_LOG(APP_LOG_LEVEL_DEBUG, "draw width=%d",draw_size.w);
 
             graphics_draw_bitmap_in_rect(ctx, menu->bitmap_or_text
-                                     , (GRect){ .origin = GPointZero, .size = draw_size });
+                                     , (GRect){.origin = GPointZero, .size = draw_size});
         }
-        return ;
+        return;
     }
-    menu_cell_basic_draw(ctx, cell_layer, menu->title, menu->bitmap_or_text, NULL );
+    menu_cell_basic_draw(ctx, cell_layer, menu->title, menu->bitmap_or_text, NULL);
 }
 
 /*!
@@ -354,14 +414,16 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
  @param[in] cell_index セクション番号とメニュー番号情報が入っている構造体
  @param[in] data data
  */
-static void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
-    return ;//何もしない
+static void menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
+{
+    return;    //何もしない
 }
 
 /*!
  @brief ウィンドウの初期化。
  */
-static void window_load(Window *window) {
+static void window_load(Window *window)
+{
     Layer *window_layer = window_get_root_layer(window);
 
     // menu layerの作成
@@ -369,7 +431,7 @@ static void window_load(Window *window) {
     menu_layer = menu_layer_create(bounds);
 
     // menu layer のコールバック関数等の初期化
-    menu_layer_set_callbacks(menu_layer, NULL, (MenuLayerCallbacks){
+    menu_layer_set_callbacks(menu_layer, NULL, (MenuLayerCallbacks) {
             .get_num_sections = menu_get_num_sections_callback,
                 .get_num_rows = menu_get_num_rows_callback,
                 .get_cell_height = menu_get_cell_height,
@@ -392,13 +454,15 @@ static void window_load(Window *window) {
 /*!
  @brief ウィンドウの後始末。
  */
-static void window_unload(Window *window) {
+static void window_unload(Window *window)
+{
 }
 
 /*!
  @brief アプリの初期化。
  */
-static void init() {
+static void init()
+{
     window = window_create();
     //window_set_background_color(window, GColorBlack);
     window_set_background_color(window, GColorWhite);
@@ -407,7 +471,6 @@ static void init() {
         .load = window_load,
         .unload = window_unload
     });
-
 
     const int inbound_size = 128;
     const int outbound_size = 128;
@@ -430,13 +493,14 @@ static void init() {
 /*!
  @brief アプリの後始末。
  */
-static void deinit() {
+static void deinit()
+{
     // 加速度情報更新終了
     accel_data_service_unsubscribe();
     // バッテリー情報更新処理終了
     battery_state_service_unsubscribe();
     // メニュー使用後の後処理
-    menu_cleanup() ;
+    menu_cleanup();
     // バイナリの一時データを初期化
     binary_cleanup();
     // 画像の後始末
@@ -450,7 +514,8 @@ static void deinit() {
 /*!
   @brief エントリポイント。
  */
-int main(void) {
+int main(void)
+{
     init();
     app_event_loop();
     deinit();
