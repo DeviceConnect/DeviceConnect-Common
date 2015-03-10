@@ -65,24 +65,24 @@ static void in_event_accel_handler(AccelData *data, uint32_t num_samples)
         }
     }
 
-	if (!mq_push()) {
-		entry_log("error", "in_event_accel_handler");
-		return;
-	}
-	
+    if (!mq_push()) {
+        entry_log("error", "in_event_accel_handler");
+        return;
+    }
+
     int32_t t = get_current_time();
     int32_t interval = t - last_event_time;
     last_event_time = t;
 
     pebble_sniff_interval_normal();
-	
-	mq_kv_set(KEY_ACTION, ACTION_EVENT);
-	mq_kv_set(KEY_PROFILE, PROFILE_DEVICE_ORIENTATION);
-	mq_kv_set(KEY_ATTRIBUTE, DEVICE_ORIENTATION_ATTRIBUTE_ON_DEVICE_ORIENTATION);
-	mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_X, data->x);
-	mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_Y, data->y);
-	mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_Z, data->z);
-	mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_INTERVAL, interval);
+
+    mq_kv_set(KEY_ACTION, ACTION_EVENT);
+    mq_kv_set(KEY_PROFILE, PROFILE_DEVICE_ORIENTATION);
+    mq_kv_set(KEY_ATTRIBUTE, DEVICE_ORIENTATION_ATTRIBUTE_ON_DEVICE_ORIENTATION);
+    mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_X, data->x);
+    mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_Y, data->y);
+    mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_Z, data->z);
+    mq_kv_set(KEY_PARAM_DEVICE_ORIENTATION_INTERVAL, interval);
 
     counter_for_log++;
     {
@@ -93,7 +93,7 @@ static void in_event_accel_handler(AccelData *data, uint32_t num_samples)
         replace_last_log(title, buf);
     }
 
-	send_message();
+    send_message();
 }
 
 /*!
