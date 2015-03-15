@@ -87,8 +87,10 @@
 #define PROFILE_SETTING 4
 /*! @define System プロファイル。system/events 用. */
 #define PROFILE_SYSTEM 5
+/*! @define Canvas プロファイル。canvas 用. */
+#define PROFILE_CANVAS 6
 /*! @define Key Event Profile. */
-#define PROFILE_KEY_EVENT 6
+#define PROFILE_KEY_EVENT 7
 
 /*! バイナリを送るためのプロファイル。 */
 #define PROFILE_BINARY 255
