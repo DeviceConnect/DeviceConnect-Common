@@ -39,6 +39,11 @@ void pebble_set_error_code(int error_code);
 void pebble_set_bitmap(uint8_t* data, int32_t size);
 
 /*!
+ @brief 画面に表示されいる画像を削除する。
+ */
+void pebble_hidden_bitmap();
+
+/*!
  @brief Bluetooth の通信速度を上げる(消費電力は高くなる)。
  */
 void pebble_sniff_interval_normal( void );
@@ -63,14 +68,6 @@ void entry_log( char* titleStr, char* contents ) ;
  @param[in] contents 文字列
  */
 void entry_log2( char* title, char* contents ) ;
-
-/*!
- @brief 画像ログの表示。
- 
- @param[in] title タイトル。
- @param[in] contents コンテンツ。
- */
-void entry_gbitmap_log( char* titleStr, void* contents ) ;
 
 /*!
  @brief 最新のログと置き換える

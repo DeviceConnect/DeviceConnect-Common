@@ -58,19 +58,19 @@ static void send_battery_percent( int percent )
     // 加速度センサーが動いている場合には、一瞬止める
     orientation_service_pause();
 
-	if (!mq_push()) {
-		entry_log("error", "send_battery_percent");
-		return;
-	}
-	
-	mq_kv_set(KEY_ACTION, ACTION_EVENT);
-	mq_kv_set(KEY_PROFILE, PROFILE_BATTERY);
-	mq_kv_set(KEY_ATTRIBUTE, BATTERY_ATTRIBUTE_ON_BATTERY_CHANGE);
-	mq_kv_set(KEY_PARAM_BATTERY_LEVEL, percent);
-	
-	send_message();
+    if (!mq_push()) {
+        entry_log("error", "send_battery_percent");
+        return;
+    }
 
-	pebble_sniff_interval_normal();
+    mq_kv_set(KEY_ACTION, ACTION_EVENT);
+    mq_kv_set(KEY_PROFILE, PROFILE_BATTERY);
+    mq_kv_set(KEY_ATTRIBUTE, BATTERY_ATTRIBUTE_ON_BATTERY_CHANGE);
+    mq_kv_set(KEY_PARAM_BATTERY_LEVEL, percent);
+
+    send_message();
+
+    pebble_sniff_interval_normal();
     entry_log("send", "send_battery_percent");
 }
 
@@ -81,21 +81,21 @@ static void send_battery_percent( int percent )
  */
 static void send_battery_charging( bool charging )
 {
-	if (!mq_push()) {
-		entry_log("error", "send_battery_charging");
-		return;
-	}
-	
-	// 加速度センサーが動いている場合には、一瞬止める
-	orientation_service_pause();
-	
-	mq_kv_set(KEY_ACTION, ACTION_EVENT);
-	mq_kv_set(KEY_PROFILE, PROFILE_BATTERY);
-	mq_kv_set(KEY_ATTRIBUTE, BATTERY_ATTRIBUTE_ON_CHARGING_CHANGE);
-	mq_kv_set(KEY_PARAM_BATTERY_CHARGING, charging);
+    if (!mq_push()) {
+        entry_log("error", "send_battery_charging");
+        return;
+    }
 
-	send_message();
-	
+    // 加速度センサーが動いている場合には、一瞬止める
+    orientation_service_pause();
+
+    mq_kv_set(KEY_ACTION, ACTION_EVENT);
+    mq_kv_set(KEY_PROFILE, PROFILE_BATTERY);
+    mq_kv_set(KEY_ATTRIBUTE, BATTERY_ATTRIBUTE_ON_CHARGING_CHANGE);
+    mq_kv_set(KEY_PARAM_BATTERY_CHARGING, charging);
+
+    send_message();
+
     pebble_sniff_interval_normal();
     entry_log("send", "battery_charging");
 }
@@ -155,8 +155,8 @@ static void in_event_battery_handler(BatteryChargeState state) {
         entry_log("event","onbatterychange");
         send_battery_percent(state.charge_percent);
     }
-	last_state = state;
-	return;
+    last_state = state;
+    return;
 }
 
 /*!
@@ -180,12 +180,12 @@ static void in_received_get_battery_handler(DictionaryIterator *received) {
             BatteryChargeState state = battery_state_service_peek();
             // チャージングフラグ
             int charging = state.is_plugged ? BATTERY_CHARGING_ON : BATTERY_CHARGING_OFF;
-			mq_kv_set(KEY_PARAM_BATTERY_CHARGING, charging);
+            mq_kv_set(KEY_PARAM_BATTERY_CHARGING, charging);
             // パーセンテージ
             // pebbleのバッテリーは、0-100になっている。
             // dconnectでは、0.0-1.0の浮動少数なので変換が必要。
             // ただし、C側で変換するのは手間なので、JavaまたはiOS側で行うこととする。
-			mq_kv_set(KEY_PARAM_BATTERY_LEVEL, state.charge_percent);
+            mq_kv_set(KEY_PARAM_BATTERY_LEVEL, state.charge_percent);
 
         }   break;
         case BATTERY_ATTRIBUTE_CHARING: {
@@ -196,8 +196,8 @@ static void in_received_get_battery_handler(DictionaryIterator *received) {
             BatteryChargeState state = battery_state_service_peek();
             int charging = state.is_plugged ? BATTERY_CHARGING_ON : BATTERY_CHARGING_OFF;
             // チャージングフラグ
-			mq_kv_set(KEY_PARAM_BATTERY_CHARGING, charging);
-        }    break;
+            mq_kv_set(KEY_PARAM_BATTERY_CHARGING, charging);
+        }   break;
         case BATTERY_ATTRIBUTE_LEVEL: {
             // 加速度センサーが動いている場合には、一瞬止める
             orientation_service_pause();
@@ -205,8 +205,8 @@ static void in_received_get_battery_handler(DictionaryIterator *received) {
             entry_log("get", "BATTERY_ATTRIBUTE_LEVEL");
             BatteryChargeState state = battery_state_service_peek();
             // パーセンテージ
-			mq_kv_set(KEY_PARAM_BATTERY_LEVEL, state.charge_percent);
-        }    break;
+            mq_kv_set(KEY_PARAM_BATTERY_LEVEL, state.charge_percent);
+        }   break;
         default:
             entry_log("get", "BATTERY error");
             // not support
