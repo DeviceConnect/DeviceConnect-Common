@@ -122,6 +122,10 @@
 
 #define SYSTEM_ATTRIBUTE_EVENTS 1
 
+////////// canvas
+
+#define CANVAS_DRAW_IMAGE 1
+
 ////////// key event
 
 #define KEY_EVENT_ATTRIBUTE_ON_DOWN 1

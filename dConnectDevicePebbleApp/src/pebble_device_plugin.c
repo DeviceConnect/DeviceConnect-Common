@@ -13,6 +13,7 @@
 #include "pebble_device_plugin.h"
 #include "battery_profile.h"
 #include "binary_profile.h"
+#include "canvas_profile.h"
 #include "device_orientation_profile.h"
 #include "settings_profile.h"
 #include "vibration_profile.h"
@@ -43,6 +44,8 @@ static short pbi_image_width ;
  @brief メニューを表示するためのレイヤー。
  */
 static MenuLayer *menu_layer;
+static BitmapLayer *img_layer;
+
 
 /*!
  @brief エラーコードを設定する。
@@ -51,12 +54,12 @@ static MenuLayer *menu_layer;
  */
 void pebble_set_error_code(int error_code)
 {
-	mq_kv_set(KEY_PARAM_RESULT, RESULT_ERROR);
-	mq_kv_set(KEY_PARAM_ERROR_CODE, error_code);
+    mq_kv_set(KEY_PARAM_RESULT, RESULT_ERROR);
+    mq_kv_set(KEY_PARAM_ERROR_CODE, error_code);
 
-	char buf[20];
-	snprintf(buf, sizeof(buf), "code=%d", error_code);
-	entry_log("error", buf);
+    char buf[20];
+    snprintf(buf, sizeof(buf), "code=%d", error_code);
+    entry_log("error", buf);
 }
 
 /*!
@@ -104,18 +107,6 @@ void entry_log2(char* title, char* contents)
 }
 
 /*!
- @brief 画像ログの表示。
- 
- @param[in] title タイトル。
- @param[in] contents コンテンツ。
- */
-void entry_gbitmap_log(char* title, void* contents)
-{
-    entry_menu_item(title, contents, true);
-    menu_layer_reload_data(menu_layer);
-}
-
-/*!
  @brief 最新のログと置き換える
 
  @param[in] title 文字列
@@ -147,7 +138,13 @@ void pebble_set_bitmap(uint8_t* data, int32_t size)
     }
 
     bitmap = gbitmap_create_with_data((const uint8_t *) data);
-    entry_gbitmap_log("bitmap", bitmap);
+    bitmap_layer_set_bitmap(img_layer, bitmap);
+    layer_set_hidden(bitmap_layer_get_layer(img_layer), false);
+}
+
+void pebble_hidden_bitmap()
+{
+    layer_set_hidden(bitmap_layer_get_layer(img_layer), true);
 }
 
 /*!
@@ -174,13 +171,13 @@ static void in_received_handler(DictionaryIterator *received, void *context)
         return;
     }
 
-	if (!mq_push()) {
-		entry_log("error", "in_received_handler");
-		return;
-	}
+    if (!mq_push()) {
+        entry_log("error", "in_received_handler");
+        return;
+    }
 
-	// リクエストコード追加
-	mq_kv_set(KEY_PARAM_REQUEST_CODE, requestCodeTuple->value->uint32);
+    // リクエストコード追加
+    mq_kv_set(KEY_PARAM_REQUEST_CODE, requestCodeTuple->value->uint32);
 
     int ret = RETURN_SYNC;
 
@@ -201,6 +198,8 @@ static void in_received_handler(DictionaryIterator *received, void *context)
     case PROFILE_SYSTEM:
         ret = in_received_system_handler(received);
         break;
+    case PROFILE_CANVAS:
+        ret = in_received_canvas_handler(received);
     case PROFILE_KEY_EVENT:
         ret = in_received_key_event_handler(received);
         break;
@@ -217,7 +216,7 @@ static void in_received_handler(DictionaryIterator *received, void *context)
 
     // 非同期でレスポンスすることがあるのか？
     if (ret == RETURN_SYNC) {
-		send_message();
+        send_message();
     }
 }
 
@@ -244,8 +243,8 @@ static void in_dropped_handler(AppMessageResult reason, void *context)
 static void out_sent_handler(DictionaryIterator *sent, void *context)
 {
     DBG_LOG(APP_LOG_LEVEL_DEBUG, "out sent handler");
-	
-	success_message();
+
+    success_message();
 }
 
 /*!
@@ -257,8 +256,8 @@ static void out_sent_handler(DictionaryIterator *sent, void *context)
  */
 static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context)
 {
-	DBG_LOG(APP_LOG_LEVEL_DEBUG, "out failed handler");
-	
+    DBG_LOG(APP_LOG_LEVEL_DEBUG, "out failed handler");
+
     if (reason != APP_MSG_OK) {
         char buf[20];
         snprintf(buf, sizeof(buf), "err=0x%x", reason);
@@ -309,9 +308,9 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
         DBG_LOG(APP_LOG_LEVEL_DEBUG, "APP_MSG_INTERNAL_ERROR");
         break;
     }
-	
-	//
-	retry_message();
+
+    //
+    retry_message();
 }
 
 /*!
@@ -447,12 +446,14 @@ static void window_load(Window *window)
 
     // menu layer にプッシュボタンの操作を割り付ける
     menu_layer_set_click_config_onto_window(menu_layer, window);
-
     // Add it to the window for display
     layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
 
-    init_menu_item();
+    // bitmap描画用レイヤー
+    img_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
+    layer_add_child(window_layer, bitmap_layer_get_layer(img_layer));
 
+    init_menu_item();
 }
 
 /*!
@@ -490,8 +491,8 @@ static void init()
     app_message_register_outbox_failed(out_failed_handler);
     app_message_register_inbox_received(in_received_handler);
     app_message_register_inbox_dropped(in_dropped_handler);
-	
-	mq_init();
+
+    mq_init();
 }
 
 /*!

@@ -28,8 +28,8 @@ static void in_received_get_setting_handler(DictionaryIterator *received)
     Tuple *attributeTuple = dict_find(received, KEY_ATTRIBUTE);
     switch (attributeTuple->value->uint8) {
     case SETTING_ATTRIBUTE_DATE: {
-		// 細かい動きはsend_message()内で行う
-		mq_kv_set(KEY_PARAM_SETTING_DATE, 0);
+        // 細かい動きはsend_message()内で行う
+        mq_kv_set(KEY_PARAM_SETTING_DATE, 0);
     }   break;
     default:
         // not support
