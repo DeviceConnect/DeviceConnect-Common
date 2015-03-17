@@ -48,14 +48,19 @@
 #define KEY_PARAM_DEVICE_ORIENTATION_Z 402
 #define KEY_PARAM_DEVICE_ORIENTATION_INTERVAL 403
 
-////////// setting
-
-#define KEY_PARAM_SETTING_DATE 600
-
 ////////// vibration
 
 #define KEY_PARAM_VIBRATION_LEN 500
 #define KEY_PARAM_VIBRATION_PATTERN 501
+
+////////// setting
+
+#define KEY_PARAM_SETTING_DATE 600
+
+/////////////////// key event
+
+#define KEY_PARAM_KEY_EVENT_ID 700
+#define KEY_PARAM_KEY_EVENT_KEY_TYPE 701
 
 ///////////////////////////////////////////////////////////////////
 
@@ -84,6 +89,8 @@
 #define PROFILE_SYSTEM 5
 /*! @define Canvas プロファイル。canvas 用. */
 #define PROFILE_CANVAS 6
+/*! @define Key Event Profile. */
+#define PROFILE_KEY_EVENT 7
 
 /*! バイナリを送るためのプロファイル。 */
 #define PROFILE_BINARY 255
@@ -118,6 +125,24 @@
 ////////// canvas
 
 #define CANVAS_DRAW_IMAGE 1
+
+////////// key event
+
+#define KEY_EVENT_ATTRIBUTE_ON_DOWN 1
+#define KEY_EVENT_ATTRIBUTE_ON_UP 2
+
+#define KEY_EVENT_ACTION_DOWN 1
+#define KEY_EVENT_ACTION_UP 2
+
+#define KEY_EVENT_KEY_ID_UP 1
+#define KEY_EVENT_KEY_ID_SELECT 2
+#define KEY_EVENT_KEY_ID_DOWN 3
+#define KEY_EVENT_KEY_ID_BACK 4
+
+#define KEY_EVENT_KEY_TYPE_STD_KEY 1
+#define KEY_EVENT_KEY_TYPE_MEDIA 2
+#define KEY_EVENT_KEY_TYPE_DPAD_BUTTON 3
+#define KEY_EVENT_KEY_TYPE_USER 4
 
 ///////////////////////////////////////////////////////////////////
 
