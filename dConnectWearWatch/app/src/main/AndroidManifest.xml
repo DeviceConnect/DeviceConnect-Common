@@ -24,13 +24,18 @@
         <service android:name=".DataLayerListenerService">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.BIND_LISTENER"/>
-                <action android:name="org.deviceconnect.wear.ping.service" />
+                <action android:name="org.deviceconnect.wear.ping.service"/>
             </intent-filter>
         </service>
 
         <activity
             android:name=".WearKeyEventProfileActivity"
             android:label="@string/title_activity_wear_keyevent_profile" >
+        </activity>
+
+        <activity
+            android:name=".WearTouchProfileActivity"
+            android:label="@string/title_activity_wear_touch_profile" >
         </activity>
     </application>
 
