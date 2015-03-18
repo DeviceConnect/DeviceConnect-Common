@@ -82,9 +82,6 @@ public class DataLayerListenerService extends WearableListenerService implements
      */
     private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
 
-    /** Broadcast receiver. */
-    MyBroadcastReceiver mReceiver = null;
-
     @Override
     public void onCreate() {
         super.onCreate();
