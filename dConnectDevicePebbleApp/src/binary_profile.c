@@ -94,7 +94,7 @@ int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator 
         binary_length = len;
         DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_binary_handler start: %d %d", binary_index, binary_length);
         under_receive = true;
-        entry_log("file send", "start");
+        entry_log("send bitmap", "start");
     } else if (binary_data != NULL) {
         pebble_sniff_interval_normal();
         Tuple *indexTuple = dict_find(received, KEY_PARAM_BINARY_INDEX);
@@ -105,6 +105,7 @@ int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator 
             if (index == binary_index) {
                 // コピー終了
                 DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_binary_handler end: %d", index);
+
                 int l = binary_length - index * BINARY_BUF_SIZE;
                 memcpy(&binary_data[index * BINARY_BUF_SIZE], body, l);
 
@@ -115,11 +116,10 @@ int in_received_binary_handler(DictionaryIterator *received, DictionaryIterator 
                 // 使い終わった添付データは削除
                 binary_cleanup();
                 pebble_sniff_interval_reduced();
-                entry_log("file send", "end");
+                entry_log("send bitmap", "end");
             } else {
                 pebble_sniff_interval_normal() ;
-                replace_last_log("file send", make_log_explain(index, binary_index));
-                //DBG_LOG(APP_LOG_LEVEL_DEBUG, "in_received_binary_handler: %d", index);
+                replace_last_log("send bitmap", make_log_explain(index, binary_index));
                 memcpy(&binary_data[index * BINARY_BUF_SIZE], body, BINARY_BUF_SIZE);
             }
         }

@@ -80,9 +80,10 @@
 #define PROFILE_VIBRATION 3
 /*! @define Settingsプロファイル。 */
 #define PROFILE_SETTING 4
-
 /*! @define System プロファイル。system/events 用. */
 #define PROFILE_SYSTEM 5
+/*! @define Canvas プロファイル。canvas 用. */
+#define PROFILE_CANVAS 6
 
 /*! バイナリを送るためのプロファイル。 */
 #define PROFILE_BINARY 255
@@ -113,6 +114,10 @@
 ////////// events system/events 用.
 
 #define SYSTEM_ATTRIBUTE_EVENTS 1
+
+////////// canvas
+
+#define CANVAS_DRAW_IMAGE 1
 
 ///////////////////////////////////////////////////////////////////
 
