@@ -11,8 +11,8 @@
 #define KEY_SIZE 7
 
 typedef struct key_value_data {
-	int key;
-	int value;
+    int key;
+    int value;
 } key_value_data_t;
 
 static key_value_data_t queue[QUEUE_SIZE][KEY_SIZE] = {};
@@ -28,11 +28,11 @@ static int get_index;
  */
 void mq_kv_clear()
 {
-	for (int i = 0; i < KEY_SIZE; i++) {
-		key_value_data_t kv = {0};
-		queue[current][i] = kv;
-	}
-	set_index = 0;
+    for (int i = 0; i < KEY_SIZE; i++) {
+        key_value_data_t kv = {0};
+        queue[current][i] = kv;
+    }
+    set_index = 0;
 }
 
 /*!
@@ -43,15 +43,15 @@ void mq_kv_clear()
  */
 void mq_kv_set(int key, int value)
 {
-	if (set_index < KEY_SIZE) {
-		key_value_data_t kv;
-		kv.key = key;
-		kv.value = value;
-		queue[current][set_index++] = kv;
-	} else {
-		//printf("*ERROR!!*\n");
-		// assertion!!
-	}
+    if (set_index < KEY_SIZE) {
+        key_value_data_t kv;
+        kv.key = key;
+        kv.value = value;
+        queue[current][set_index++] = kv;
+    } else {
+        //printf("*ERROR!!*\n");
+        // assertion!!
+    }
 }
 
 /*!
@@ -64,14 +64,14 @@ void mq_kv_set(int key, int value)
  */
 bool mq_kv_get_next(int *key, int *value)
 {
-	if (get_index < KEY_SIZE) {
-		key_value_data_t kv = queue[front][get_index++];
-		*key = kv.key;
-		*value = kv.value;
-	} else {
-		return false;
-	}
-	return true;
+    if (get_index < KEY_SIZE) {
+        key_value_data_t kv = queue[front][get_index++];
+        *key = kv.key;
+        *value = kv.value;
+    } else {
+        return false;
+    }
+    return true;
 }
 
 /*!
@@ -84,8 +84,8 @@ bool mq_kv_get_next(int *key, int *value)
  */
 bool mq_kv_get_first(int *key, int *value)
 {
-	get_index = 0;
-	return mq_kv_get_next(key, value);
+    get_index = 0;
+    return mq_kv_get_next(key, value);
 }
 
 /*!
@@ -93,8 +93,8 @@ bool mq_kv_get_first(int *key, int *value)
 */
 void mq_init()
 {
-	front = rear = current = 0;
-	mq_kv_clear();
+    front = rear = current = 0;
+    mq_kv_clear();
 }
 
 /*!
@@ -106,7 +106,7 @@ void mq_init()
  */
 int mq_next(int index)
 {
-	return (index + 1) % QUEUE_SIZE;
+    return (index + 1) % QUEUE_SIZE;
 }
 
 /*!
@@ -116,14 +116,14 @@ int mq_next(int index)
  */
 bool mq_push()
 {
-	if (mq_next(rear) == front) {
-		// キューが一杯
-		return false;
-	}
-	current = rear;
-	rear = mq_next(rear);
-	mq_kv_clear();
-	return true;
+    if (mq_next(rear) == front) {
+        // キューが一杯
+        return false;
+    }
+    current = rear;
+    rear = mq_next(rear);
+    mq_kv_clear();
+    return true;
 }
 
 /*!
@@ -133,12 +133,12 @@ bool mq_push()
  */
 bool mq_pop()
 {
-	if (mq_next(front) == rear) {
-		// キューが空
-		//printf("emp!!\n");
-		front = rear;
-		return false;
-	}
-	front = mq_next(front);
-	return true;
+    if (mq_next(front) == rear) {
+        // キューが空
+        //printf("emp!!\n");
+        front = rear;
+        return false;
+    }
+    front = mq_next(front);
+    return true;
 }
