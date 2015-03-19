@@ -74,13 +74,13 @@ public class DataLayerListenerService extends WearableListenerService implements
     /** The start time for measuring the interval. */
     private long mStartTime;
 
+    /** Broadcast receiver. */
+    MyBroadcastReceiver mReceiver = null;
+
     /**
      * スレッド管理用クラス.
      */
     private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
-
-    /** Broadcast receiver. */
-    MyBroadcastReceiver mReceiver = null;
 
     @Override
     public void onCreate() {
@@ -98,6 +98,7 @@ public class DataLayerListenerService extends WearableListenerService implements
         super.onDestroy();
         mIds.clear();
         unregisterSensor();
+        unregisterReceiver(mReceiver);
     }
 
     @Override
@@ -154,7 +155,7 @@ public class DataLayerListenerService extends WearableListenerService implements
             if (mSensorManager == null) {
                 registerSensor();
             }
-            
+
             // For service destruction suppression.
             Intent i = new Intent(WearConst.ACTION_WEAR_PING_SERVICE);
             startService(i);
@@ -317,7 +318,7 @@ public class DataLayerListenerService extends WearableListenerService implements
                 return;
             }
         }
-
+        
         MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(client, id,
                 WearConst.WEAR_TO_DEVICE_DEIVCEORIENTATION_DATA, data.getBytes()).await();
         if (!result.getStatus().isSuccess()) {
@@ -333,7 +334,7 @@ public class DataLayerListenerService extends WearableListenerService implements
     private void startVibration(final MessageEvent messageEvent) {
         // get vibration pattern
         String mPattern = new String(messageEvent.getData());
-
+        
         // Make array of pattern
         String[] mPatternArray = mPattern.split(",", 0);
         long[] mPatternLong = new long[mPatternArray.length + 1];
@@ -341,12 +342,12 @@ public class DataLayerListenerService extends WearableListenerService implements
         for (int i = 1; i < mPatternLong.length; i++) {
             mPatternLong[i] = Integer.parseInt(mPatternArray[i - 1]);
         }
-
+        
         // vibrate
         Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         vibrator.vibrate(mPatternLong, -1);
     }
-
+    
     /**
      * バイブレーションを停止する.
      */
@@ -355,7 +356,7 @@ public class DataLayerListenerService extends WearableListenerService implements
         Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         vibrator.cancel();
     }
-
+    
     /**
      * センサーを登録する.
      */
@@ -372,23 +373,23 @@ public class DataLayerListenerService extends WearableListenerService implements
                 return;
             }
         }
-
+        
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         List<Sensor> accelSensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
         if (accelSensors.size() > 0) {
             mAccelerometer = accelSensors.get(0);
             mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         }
-
+        
         List<Sensor> gyroSensors = mSensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
         if (gyroSensors.size() > 0) {
             mGyroSensor = gyroSensors.get(0);
             mSensorManager.registerListener(this, mGyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
-
+        
         mStartTime = System.currentTimeMillis();
     }
-
+    
     /**
      * センサーを解除する.
      */
@@ -400,7 +401,7 @@ public class DataLayerListenerService extends WearableListenerService implements
             mSensorManager = null;
         }
     }
-
+    
     /**
      * Canvasの画面を削除する.
      */
@@ -426,13 +427,13 @@ public class DataLayerListenerService extends WearableListenerService implements
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, regist);
         this.startActivity(i);
-        
+
         // Send event regist to Activity.
         i = new Intent(WearConst.PARAM_DC_WEAR_KEYEVENT_SVC_TO_ACT);
         i.putExtra(WearConst.PARAM_KEYEVENT_REGIST, regist);
         sendBroadcast(i);
     }
-    
+
     /**
      * Execute Touch Activity.
      *
@@ -450,7 +451,7 @@ public class DataLayerListenerService extends WearableListenerService implements
         i.putExtra(WearConst.PARAM_TOUCH_REGIST, regist);
         sendBroadcast(i);
     }
-    
+
     /**
      * Broadcast Receiver.
      */
@@ -460,7 +461,7 @@ public class DataLayerListenerService extends WearableListenerService implements
             String action = i.getAction();
             final String data;
             final String profile;
-            
+
             if (action.equals(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC)) {
                 data = i.getStringExtra(WearConst.PARAM_KEYEVENT_DATA);
                 profile = WearConst.WEAR_TO_DEVICE_KEYEVENT_DATA;
@@ -470,7 +471,7 @@ public class DataLayerListenerService extends WearableListenerService implements
             } else {
                 return;
             }
-            
+
             // Send message data.
             mExecutorService.execute(new Runnable() {
                 @Override
@@ -495,7 +496,6 @@ public class DataLayerListenerService extends WearableListenerService implements
                                     Log.e("WEAR", "Failed to send a sensor event.");
                                 }
                             }
-
                         }
                     }
                 }

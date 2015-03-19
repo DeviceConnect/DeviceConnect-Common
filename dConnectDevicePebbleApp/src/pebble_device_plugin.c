@@ -18,6 +18,7 @@
 #include "settings_profile.h"
 #include "vibration_profile.h"
 #include "system_profile.h"
+#include "key_event_profile.h"
 #include "menu_item.h"
 #include "message_queue.h"
 
@@ -199,6 +200,8 @@ static void in_received_handler(DictionaryIterator *received, void *context)
         break;
     case PROFILE_CANVAS:
         ret = in_received_canvas_handler(received);
+    case PROFILE_KEY_EVENT:
+        ret = in_received_key_event_handler(received);
         break;
     default:
         {
