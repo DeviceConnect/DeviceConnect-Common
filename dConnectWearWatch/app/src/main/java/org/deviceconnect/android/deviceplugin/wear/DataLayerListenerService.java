@@ -98,7 +98,6 @@ public class DataLayerListenerService extends WearableListenerService implements
         super.onDestroy();
         mIds.clear();
         unregisterSensor();
-        unregisterReceiver(mReceiver);
     }
 
     @Override
