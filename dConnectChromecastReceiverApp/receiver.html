@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Receiver</title>
+    <style type="text/css">
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
+
+        canvas#image {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -50;
+            background-size: cover;
+        }
+
+        video#mediaplayer {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -100;
+            background-size: cover;
+        }
+    </style>
+
+    <script src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
+    <script type="text/javascript" src="./js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript">
+        var namespace = "urn:x-cast:com.name.space.chromecast.test.receiver";
+        var nId = 'notification';
+        var iId = 'image';
+        var videoId = 'mediaplayer';
+
+        var nCtx;
+        var iCtx;
+
+        function init() {
+            console.log("init");
+            nCtx = initNotificationCanvas(nId);
+            iCtx = initImageCanvas(iId);
+            
+            showMessage(nCtx, "Hello, Device Connect!");
+        }
+
+        function e(id) {
+            return document.getElementById(id);
+        }
+
+        function initNotificationCanvas(id) {
+            var ctx = e(id).getContext('2d');
+            ctx.canvas.width = window.innerWidth;
+            ctx.canvas.height = window.innerHeight * 0.1;
+            return ctx;
+        }
+
+        function initImageCanvas(id) {
+            var ctx = e(id).getContext('2d');
+            ctx.canvas.width = window.innerWidth;
+            ctx.canvas.height = window.innerHeight;
+            return ctx;
+        }
+
+        function showMessage(ctx, message) {
+            var w = ctx.canvas.width;
+            var h = ctx.canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(0, 0, w, h);
+            ctx.font = "40px Arial";
+            ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+            ctx.fillText(message, 5, 45);
+        }
+
+        function showImage(ctx, url, x, y, mode) {
+            if (mode === null || mode === 'same') {
+                showImageSameRate(ctx, url, x, y);
+            } else if (mode === 'fills') {
+                showImageFill(ctx, url);
+            } else if (mode === 'scales') {
+                showImageScale(ctx, url);
+            } else {
+                showImageSameRate(ctx, url, x, y);
+            }
+        }
+
+        function showImageSameRate(ctx, url, x, y) {
+            var w = ctx.canvas.width;
+            var h = ctx.canvas.height;
+            var img = new Image();
+
+            img.addEventListener('load', function() {
+                ctx.clearRect(0, 0, w, h);
+                ctx.drawImage(img, x, y);
+            });
+            img.src = url;
+        }
+
+        function scale(W, H, w, h) {
+            var A = W / H;
+            var a = w / h;
+            var px = W / 2;
+            var py = H / 2;
+            var x, y, s;
+            if (a > A) {
+                s = W / w;
+                x = 0;
+                y = py - (h * s) / 2;
+            } else {
+                s = H / h;
+                x = px - (w * s) / 2;
+                y = 0;
+            }
+            return {x:x, y:y, width:s*w, height:s*h};
+        }
+
+        function showImageScale(ctx, url) {
+            var W = ctx.canvas.width;
+            var H = ctx.canvas.height;
+            var img = new Image();
+
+            img.addEventListener('load', function() {
+                var s = scale(W, H, img.width, img.height);
+                ctx.clearRect(0, 0, W, H);
+                ctx.drawImage(img, s.x, s.y, s.width, s.height);
+            });
+            img.src = url;
+        }
+
+        function showImageFill(ctx, url) {
+            var w = ctx.canvas.width;
+            var h = ctx.canvas.height;
+            var img = new Image();
+
+            img.addEventListener('load', function() {
+                ctx.rect(0, 0, w, h);
+                ctx.fillStyle = ctx.createPattern(img, "repeat");
+                ctx.fill();
+            });
+            img.src = url;
+        }
+
+        window.onload = function() {
+            cast.receiver.logger.setLevelValue(cast.receiver.LoggerLevel.DEBUG);
+            
+            window.mediaElement =  document.getElementById(videoId);
+            window.mediaManager = new cast.receiver.MediaManager(window.mediaElement);
+            window.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
+
+            window.messageBus = window.castReceiverManager.getCastMessageBus(namespace);
+            window.messageBus.onMessage = function(event) {
+                console.log("Message [" + event.senderId + "]: " + event.data);
+
+                if (window.JSON) {
+                    var obj = JSON.parse(event.data);
+                    console.log("function: " + obj.function);
+                    console.log("type: " + obj.type);
+                    console.log("message: " + obj.message);
+
+                    if (obj.function == "write") {
+                        console.log("write");
+                        showMessage(nCtx, obj.type + ": " + obj.message);
+                    } else if (obj.function == "clear") {
+                        console.log("clear");
+                        nCtx.clearRect(0, 0, nCtx.canvas.width, nCtx.canvas.height);
+                    } else if (obj.function == "canvas_draw") {
+                        console.log("canvas_draw");
+                        var url = obj.url;
+                        var x = obj.x;
+                        var y = obj.y;
+                        var mode = obj.mode;
+                        showImage(iCtx, url, x, y, mode);
+                    } else if (obj.function == "canvas_delete") {
+                        console.log("canvas_delete");
+                        iCtx.clearRect(0, 0, iCtx.canvas.width, iCtx.canvas.height);
+                    }
+                }
+                window.messageBus.send(event.senderId, event.data);
+            }
+            window.castReceiverManager.start();
+        }
+    </script>
+</head>
+
+<body onload="init()">
+<canvas id="notification"></canvas>
+<canvas id="image" ></canvas>
+<video id="mediaplayer" ></video>
+</body>
+</html>

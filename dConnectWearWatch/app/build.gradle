@@ -4,19 +4,16 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 20
     buildToolsVersion "20.0.0"
-
     defaultConfig {
         applicationId "org.deviceconnect.android.deviceplugin.wear"
         minSdkVersion 20
         targetSdkVersion 20
         versionCode 1
-        versionName "1.0"
+        versionName '2.0.0'
     }
-
     signingConfigs {
         myConfig
     }
-
     if (project.hasProperty('storeFile')) {
         android.signingConfigs.myConfig.storeFile = file(storeFile)
     }
@@ -29,7 +26,6 @@ android {
     if (project.hasProperty('keyPassword')) {
         android.signingConfigs.myConfig.keyPassword = keyPassword
     }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -37,7 +33,6 @@ android {
             signingConfig signingConfigs.myConfig
         }
     }
-
     applicationVariants.all { variant ->
         if (variant.buildType.name.equals("release")) {
             variant.outputs.each { output ->
@@ -47,6 +42,8 @@ android {
                 }
             }
         }
+    }
+    productFlavors {
     }
 }
 
