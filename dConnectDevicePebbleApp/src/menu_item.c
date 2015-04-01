@@ -20,7 +20,7 @@
  */
 
 #define FIRST_MENU_TITLE  "start App"
-#define FIRST_MENU_TEXT   "ver 2014/09/19 11:00"
+#define FIRST_MENU_TEXT   "ver 2015/03/26 16:30"
 #define MENU_ITEM_MAX 20
 
 static int16_t how_many_item = 0;
