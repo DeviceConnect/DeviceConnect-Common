@@ -4,6 +4,7 @@
 
     <uses-feature android:name="android.hardware.type.watch"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application
         android:allowBackup="true"
@@ -29,12 +30,14 @@
         </service>
 
         <activity
-            android:name=".WearKeyEventProfileActivity"
+            android:name=".activity.WearKeyEventProfileActivity"
+            android:launchMode="singleTask"
             android:label="@string/title_activity_wear_keyevent_profile" >
         </activity>
 
         <activity
-            android:name=".WearTouchProfileActivity"
+            android:name=".activity.WearTouchProfileActivity"
+            android:launchMode="singleTask"
             android:label="@string/title_activity_wear_touch_profile" >
         </activity>
     </application>

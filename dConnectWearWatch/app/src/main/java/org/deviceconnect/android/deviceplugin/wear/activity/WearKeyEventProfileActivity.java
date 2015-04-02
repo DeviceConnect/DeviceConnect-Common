@@ -4,7 +4,7 @@ Copyright (c) 2015 NTT DOCOMO,INC.
 Released under the MIT license
 http://opensource.org/licenses/mit-license.php
  */
-package org.deviceconnect.android.deviceplugin.wear;
+package org.deviceconnect.android.deviceplugin.wear.activity;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -12,10 +12,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.wearable.view.WatchViewStub;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+
+import org.deviceconnect.android.deviceplugin.wear.R;
+import org.deviceconnect.android.deviceplugin.wear.WearConst;
 
 /**
  * WearKeyEventProfileActivity.
@@ -70,10 +75,23 @@ public class WearKeyEventProfileActivity extends Activity {
     private static final String[] CONFIG_USER =
             {"USER_CANCEL", "USER_OK"};
 
+    /**
+     * Wakelock.
+     */
+    private PowerManager.WakeLock mWakeLock;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLock = powerManager.newWakeLock((PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                | PowerManager.FULL_WAKE_LOCK
+                | PowerManager.ACQUIRE_CAUSES_WAKEUP), "TouchWakelockTag");
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
         // Get intent data.
         Intent intent = getIntent();
         setRegisterEvent(intent.getStringExtra(WearConst.PARAM_KEYEVENT_REGIST));
@@ -169,6 +187,11 @@ public class WearKeyEventProfileActivity extends Activity {
     public void onPause() {
         super.onPause();
         unregisterReceiver(mReceiver);
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mWakeLock.release();
     }
 
     /**

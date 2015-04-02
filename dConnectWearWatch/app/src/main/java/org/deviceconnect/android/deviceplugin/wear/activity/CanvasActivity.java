@@ -15,7 +15,9 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -44,11 +46,24 @@ public class CanvasActivity extends Activity {
      */
     private ImageView mImageView;
 
+    /**
+     * Wakelock.
+     */
+    private PowerManager.WakeLock mWakeLock;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_canvas);
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLock = powerManager.newWakeLock((PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                | PowerManager.FULL_WAKE_LOCK
+                | PowerManager.ACQUIRE_CAUSES_WAKEUP), "CanvasWakelockTag");
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        setContentView(R.layout.activity_canvas);
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
         mImageView = (ImageView) findViewById(R.id.canvas_image);
         mImageView.setVisibility(View.INVISIBLE);
 
@@ -57,7 +72,11 @@ public class CanvasActivity extends Activity {
             refreshImage(intent);
         }
     }
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mWakeLock.release();
+    }
     @Override
     protected void onNewIntent(final Intent intent) {
         super.onNewIntent(intent);
