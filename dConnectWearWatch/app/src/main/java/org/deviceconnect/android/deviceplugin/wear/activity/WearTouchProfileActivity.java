@@ -4,7 +4,7 @@ Copyright (c) 2015 NTT DOCOMO,INC.
 Released under the MIT license
 http://opensource.org/licenses/mit-license.php
  */
-package org.deviceconnect.android.deviceplugin.wear;
+package org.deviceconnect.android.deviceplugin.wear.activity;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -12,10 +12,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
+import android.view.WindowManager;
+
+import org.deviceconnect.android.deviceplugin.wear.R;
+import org.deviceconnect.android.deviceplugin.wear.WearConst;
 
 /**
  * WearTouchProfileActivity.
@@ -31,6 +36,10 @@ public class WearTouchProfileActivity extends Activity {
 
     /** Gesture detector. */
     GestureDetector mGestureDetector;
+    /**
+     * Wakelock.
+     */
+    private PowerManager.WakeLock mWakeLock;
 
     /** Event flag. */
     private int mRegisterEvent = 0;
@@ -56,6 +65,15 @@ public class WearTouchProfileActivity extends Activity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLock = powerManager.newWakeLock((PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                | PowerManager.FULL_WAKE_LOCK
+                | PowerManager.ACQUIRE_CAUSES_WAKEUP), "TouchWakelockTag");
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
 
         // Get intent data.
         Intent intent = getIntent();
@@ -82,6 +100,11 @@ public class WearTouchProfileActivity extends Activity {
     public void onPause() {
         super.onPause();
         unregisterReceiver(mReceiver);
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mWakeLock.release();
     }
 
     @Override

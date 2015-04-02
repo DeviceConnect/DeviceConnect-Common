@@ -8,10 +8,10 @@ package org.deviceconnect.android.deviceplugin.wear;
 
 import android.app.ActivityManager;
 import android.app.Service;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -33,6 +33,8 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import org.deviceconnect.android.deviceplugin.wear.activity.CanvasActivity;
+import org.deviceconnect.android.deviceplugin.wear.activity.WearKeyEventProfileActivity;
+import org.deviceconnect.android.deviceplugin.wear.activity.WearTouchProfileActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,19 +87,19 @@ public class DataLayerListenerService extends WearableListenerService implements
     @Override
     public void onCreate() {
         super.onCreate();
-
         // set BroadcastReceiver
         mReceiver = new MyBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter(WearConst.PARAM_DC_WEAR_KEYEVENT_ACT_TO_SVC);
         intentFilter.addAction(WearConst.PARAM_DC_WEAR_TOUCH_ACT_TO_SVC);
-        registerReceiver(mReceiver, intentFilter);
+        getApplicationContext().registerReceiver(mReceiver, intentFilter);
     }
+
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         mIds.clear();
         unregisterSensor();
+        super.onDestroy();
     }
 
     @Override
@@ -131,15 +133,10 @@ public class DataLayerListenerService extends WearableListenerService implements
             mSensorManager.unregisterListener(this);
             mSensorManager = null;
         }
-
-        if (mReceiver != null) {
-            unregisterReceiver(mReceiver);
-        }
     }
 
     @Override
     public void onMessageReceived(final MessageEvent messageEvent) {
-
         // get id of wear device
         String id = messageEvent.getSourceNodeId();
         String action = messageEvent.getPath();
