@@ -11,6 +11,7 @@ Device Connect CommonはDeviceConnectで使用するデバイス上で動作す�
 # <a name="section1">プロジェクトの説明
 | プロジェクト名|内容  |
 |:-----------|:---------|
+|dConnectChromecastReceiverApp|ChromeCastのReceiverアプリ。|
 | dConnectDevicePebbleApp |Pebbleとデバイスプラグイン間でデータをやり取りするためのアプリ。 |
 | dConnectWearWatch |AndroidWearとデバイスプラグイン間でデータをやり取りするためのアプリ。|
 
