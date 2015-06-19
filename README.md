@@ -16,9 +16,10 @@ In this guide I will continue to discuss the following.
 * [How to build project](#section2)
 
 # <a name="section1">Project description
-| プロジェクト名|内容  |
+| Project Name | Content  |
 |:-----------|:---------|
-| dConnectDevicePebbleApp App for exchanging data between the device and the Pebble plugin. |
+|dConnectChromecastReceiverApp|ChromeCast of Receiver app.|
+| dConnectDevicePebbleApp| App for exchanging data between the device and the Pebble plugin. |
 | dConnectWearWatch |App for exchanging data between the device and AndroidWear plugin.|
 
 
