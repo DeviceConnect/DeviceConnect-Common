@@ -12,25 +12,18 @@ android {
         versionName '2.0.0'
     }
     signingConfigs {
-        myConfig
-    }
-    if (project.hasProperty('storeFile')) {
-        android.signingConfigs.myConfig.storeFile = file(storeFile)
-    }
-    if (project.hasProperty('storePassword')) {
-        android.signingConfigs.myConfig.storePassword = storePassword
-    }
-    if (project.hasProperty('keyAlias')) {
-        android.signingConfigs.myConfig.keyAlias = keyAlias
-    }
-    if (project.hasProperty('keyPassword')) {
-        android.signingConfigs.myConfig.keyPassword = keyPassword
+        releaseConfig {
+            storeFile=file(project.properties.storeFile)
+            storePassword=project.properties.storePassword
+            keyAlias=project.properties.keyAlias
+            keyPassword=project.properties.keyPassword
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.myConfig
+            signingConfig signingConfigs.releaseConfig
         }
     }
     applicationVariants.all { variant ->
