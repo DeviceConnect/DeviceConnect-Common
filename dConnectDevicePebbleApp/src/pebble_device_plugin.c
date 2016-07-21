@@ -307,6 +307,9 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
     case APP_MSG_INTERNAL_ERROR:
         DBG_LOG(APP_LOG_LEVEL_DEBUG, "APP_MSG_INTERNAL_ERROR");
         break;
+    case APP_MSG_INVALID_STATE:
+        DBG_LOG(APP_LOG_LEVEL_DEBUG, "APP_MSG_INVALID_STATE");
+        break;
     }
 
     //
