@@ -20,13 +20,8 @@ In this guide I will continue to discuss the following.
 |:-----------|:---------|
 |dConnectChromecastReceiverApp|ChromeCast of Receiver app.|
 | dConnectDevicePebbleApp| App for exchanging data between the device and the Pebble plugin. |
-| dConnectWearWatch |App for exchanging data between the device and AndroidWear plugin.|
 
 
 # <a name="section2">How to build project 
 ## dConnectDevicePebbleApp
 Based on [here](https://github.com/DeviceConnect/DeviceConnect-Common/wiki/1.1.Pebble), please install the project to the device.
-
-## dConnectWearWatch
-Based on [here](https://github.com/DeviceConnect/DeviceConnect-Common/wiki/1.2.AndroidWear), please install the project to the device.
-
