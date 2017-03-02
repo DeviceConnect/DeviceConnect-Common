@@ -118,6 +118,14 @@ static void in_received_put_key_event_handler(DictionaryIterator *received) {
         }
         event_flag_on_up = true;
     		break;
+	case KEY_EVENT_ATTRIBUTE_ON_KEY_CHANGE:
+		entry_log2( "ON_KEY_CHANGE", "put_handler" ) ;
+		    if (window == NULL) {
+            key_event_window_init();
+        }
+        event_flag_on_down = true;
+        event_flag_on_up = true;
+    		break;
     default:
         // not support
         pebble_set_error_code(ERROR_NOT_SUPPORT_ATTRIBUTE);
@@ -146,6 +154,14 @@ static void in_received_delete_key_event_handler(DictionaryIterator *received) {
         entry_log2( "ON_UP", "del_handler" ) ;
         event_flag_on_up = false;
 		    if (event_flag_on_down == false && window != NULL) {
+            key_event_window_uninit();
+        }
+        break;
+    case KEY_EVENT_ATTRIBUTE_ON_KEY_CHANGE:
+        entry_log2( "ON_KEY_CHANGE", "del_handler" ) ;
+        event_flag_on_down = false;
+        event_flag_on_up = false;
+		    if (event_flag_on_up == false && event_flag_on_down == false && window != NULL) {
             key_event_window_uninit();
         }
         break;
@@ -379,14 +395,18 @@ static void in_key_event_handler(int action, int keyID) {
     // Setting parameter to message queue.
     mq_kv_set(KEY_ACTION, ACTION_EVENT);
     mq_kv_set(KEY_PROFILE, PROFILE_KEY_EVENT);
-	  mq_kv_set(KEY_PARAM_KEY_EVENT_KEY_TYPE, KeyType);
-	  mq_kv_set(KEY_PARAM_KEY_EVENT_ID, keyID);
+	mq_kv_set(KEY_PARAM_KEY_EVENT_KEY_TYPE, KeyType);
+	mq_kv_set(KEY_PARAM_KEY_EVENT_ID, keyID);
+	int state = KEY_PARAM_KEY_EVENT_KEY_STATE_UP;
     switch (action) {
     case KEY_EVENT_ACTION_DOWN:
+        state = KEY_PARAM_KEY_EVENT_KEY_STATE_DOWN;
         mq_kv_set(KEY_ATTRIBUTE, KEY_EVENT_ATTRIBUTE_ON_DOWN);
+        mq_kv_set(KEY_PARAM_KEY_EVENT_KEY_STATE, state);
         break;
     case KEY_EVENT_ACTION_UP:
         mq_kv_set(KEY_ATTRIBUTE, KEY_EVENT_ATTRIBUTE_ON_UP);
+        mq_kv_set(KEY_PARAM_KEY_EVENT_KEY_STATE, state);
         break;
     default:
         return;
