@@ -61,6 +61,7 @@
 
 #define KEY_PARAM_KEY_EVENT_ID 700
 #define KEY_PARAM_KEY_EVENT_KEY_TYPE 701
+#define KEY_PARAM_KEY_EVENT_KEY_STATE 702
 
 ///////////////////////////////////////////////////////////////////
 
@@ -130,6 +131,7 @@
 
 #define KEY_EVENT_ATTRIBUTE_ON_DOWN 1
 #define KEY_EVENT_ATTRIBUTE_ON_UP 2
+#define KEY_EVENT_ATTRIBUTE_ON_KEY_CHANGE 3
 
 #define KEY_EVENT_ACTION_DOWN 1
 #define KEY_EVENT_ACTION_UP 2
@@ -144,6 +146,8 @@
 #define KEY_EVENT_KEY_TYPE_DPAD_BUTTON 3
 #define KEY_EVENT_KEY_TYPE_USER 4
 
+#define KEY_PARAM_KEY_EVENT_KEY_STATE_UP 1
+#define KEY_PARAM_KEY_EVENT_KEY_STATE_DOWN 2
 ///////////////////////////////////////////////////////////////////
 
 #define RESULT_OK 1
