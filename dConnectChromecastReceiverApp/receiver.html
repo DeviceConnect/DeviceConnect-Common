@@ -49,8 +49,6 @@
             console.log("init");
             nCtx = initNotificationCanvas(nId);
             iCtx = initImageCanvas(iId);
-            
-            showMessage(nCtx, "Hello, Device Connect!");
             initReceiver();
         }
 
@@ -84,6 +82,7 @@
         }
 
         function showImage(ctx, url, x, y, mode) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             if (mode === null || mode === 'same') {
                 showImageSameRate(ctx, url, x, y);
             } else if (mode === 'fills') {
@@ -152,6 +151,8 @@
         }
 
         function initReceiver() {
+            console.log("onload");
+
             cast.receiver.logger.setLevelValue(cast.receiver.LoggerLevel.DEBUG);
             
             window.mediaElement =  document.getElementById(videoId);
