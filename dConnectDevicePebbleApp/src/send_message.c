@@ -37,14 +37,8 @@ void send_message()
             char str[64];
             // ポインタにしないとTupletCStringがエラーを出す
             char *p = str;
-            int year = local->tm_year + 1900;
-            int month = local->tm_mon + 1;
-            int day = local->tm_mday;
-            int hour = local->tm_hour;
-            int min = local->tm_min;
-            int sec = local->tm_sec;
-            // RFC 3339に合わせて変換を行う
-            snprintf(str, sizeof(str), "%4d-%02d-%02dT%02d:%02d:%02d", year, month, day, hour, min, sec);
+            // RFC 3339に合わせて変換を行えないため、ISO8601の形式でデバイス側に渡す。デバイス側で変換する。
+            strftime(str, sizeof(str), "%FT%T%z", local);
             entry_log("get setting/date", str);
             Tuplet dateTuple = TupletCString(KEY_PARAM_SETTING_DATE, p);
             dict_write_tuplet(iter, &dateTuple);
