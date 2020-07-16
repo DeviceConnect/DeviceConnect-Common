@@ -167,7 +167,7 @@ void readAndReportData(byte address, int theRegister, byte numBytes, byte stopTX
       delayMicroseconds(i2cReadDelayTime);
     }
   } else {
-    theRegister = 0;  // fill the register with a dummy value
+    theRegister = 0;  // fill the register with a Place Holder value
   }
 
   Wire.requestFrom(address, numBytes);  // all bytes are returned in requestFrom
