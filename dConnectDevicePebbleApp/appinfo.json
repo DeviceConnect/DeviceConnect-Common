@@ -1,15 +1,15 @@
 {
   "uuid": "ecfbe3b5-65f4-4532-be4e-3d013058d1f5",
-  "shortName": "Device Connect App",
-  "longName": "Device Connect App",
-  "companyName": "NTT DOCOMO, INC.",
-  "versionCode": 1,
-  "versionLabel": "1.0",
+  "shortName": "DeviceWebAPI App",
+  "longName": "DeviceWebAPI App",
+  "companyName": "GClue,Inc..",
+  "versionCode": 5,
+  "versionLabel": "2.0",
   "watchapp": {
     "watchface": false
   },
   "appKeys": {
-    "dummy": 0
+    "placeHolder": 0
   },
   "resources": {
     "media": []
